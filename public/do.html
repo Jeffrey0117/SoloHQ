@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloHQ — Tasks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10;--surface:#12151c;--border:#1e232e;--text:#d1d5e0;--text-dim:#545d6e;
+  --green:#39d353;--green-2:#26a641;--yellow:#d4a017;--red:#e55b5b;--accent:#58a6ff;
+  --font:'Noto Sans TC',-apple-system,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+.nav{display:flex;align-items:center;gap:4px;padding:12px 32px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.nav__brand{font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--green);margin-right:24px;letter-spacing:-0.5px}
+.nav a{color:var(--text-dim);padding:6px 14px;border-radius:6px;font-size:14px;font-weight:600;transition:all 0.15s}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav a.active{color:var(--text);background:rgba(255,255,255,0.08)}
+
+.container{max-width:960px;margin:0 auto;padding:28px 32px}
+
+h1{font-size:28px;font-weight:900;color:#fff;margin-bottom:4px}
+.date{font-size:14px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:28px}
+
+.task-row{display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:18px;transition:border-color 0.15s}
+.task-row:hover{border-color:#2a3040}
+.task-row.done{opacity:0.4}
+.task-row.skipped{opacity:0.35}
+.task-btn{width:42px;height:42px;border-radius:50%;border:2px solid var(--border);background:transparent;color:var(--text-dim);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.task-btn svg{width:20px;height:20px}
+.task-btn:hover{border-color:var(--green);color:var(--green);background:rgba(57,211,83,0.06)}
+.task-btn.active{background:var(--green-2);border-color:var(--green-2);color:#fff}
+.task-desc{flex:1;line-height:1.4;color:#fff}
+.task-skip{border:none;background:var(--border);color:var(--text-dim);padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;flex-shrink:0;font-family:var(--font);font-weight:600;transition:all 0.15s}
+.task-skip:hover{background:#2a3040;color:var(--text)}
+.skip-reason{font-size:13px;color:var(--text-dim);font-style:italic}
+
+.summary{margin-top:24px;padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;text-align:center;font-size:20px;color:var(--text-dim);font-family:var(--font-mono)}
+.summary strong{color:#fff;font-size:28px}
+.summary.all-done{border-color:var(--green-2);background:rgba(57,211,83,0.04)}
+.summary.all-done strong{color:var(--green)}
+
+.empty-state{color:var(--text-dim);text-align:center;padding:48px;font-size:18px;border:1px dashed var(--border);border-radius:10px}
+
+@media(max-width:700px){.container{padding:20px 16px}.nav{padding:10px 16px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav__brand">SoloHQ</span>
+  <a href="/">Dashboard</a>
+  <a href="/do" class="active">Tasks</a>
+  <a href="/matrix">Matrix</a>
+  <a href="/revenue">Revenue</a>
+  <a href="/brands">Brands</a>
+</nav>
+
+<div class="container">
+  <h1>Today</h1>
+  <div class="date" id="date"></div>
+  <div id="tasks"></div>
+  <div id="summary" class="summary" style="display:none"></div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+const { api, renderTaskList, setupAuth, $ } = SoloHQ
+setupAuth()
+$('#date').textContent = new Date().toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric', weekday:'long' })
+
+async function refresh() {
+  try {
+    const { tasks } = await api('GET', '/api/tasks/today')
+    renderTaskList($('#tasks'), tasks, { interactive: true, onUpdate: refresh })
+
+    const done = tasks.filter(t => t.status === 'done').length
+    const total = tasks.length
+    const el = $('#summary')
+    if (total > 0) {
+      el.style.display = 'block'
+      el.className = done === total ? 'summary all-done' : 'summary'
+      el.innerHTML = `<strong>${done}</strong> / ${total}` + (done === total ? ' &mdash; 全部完成' : '')
+    }
+  } catch (err) {
+    console.error('Tasks refresh failed:', err)
+  }
+}
+refresh()
+</script>
+</body>
+</html>

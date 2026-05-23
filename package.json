@@ -1,0 +1,10 @@
+{
+  "name": "solohq",
+  "version": "1.0.0",
+  "description": "Solo founder command center — commit graph + daily tasks + content matrix + revenue tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

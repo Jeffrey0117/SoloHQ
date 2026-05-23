@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloHQ — Brands</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10;--surface:#12151c;--border:#1e232e;--text:#d1d5e0;--text-dim:#545d6e;
+  --green:#39d353;--green-2:#26a641;--yellow:#d4a017;--red:#e55b5b;--accent:#58a6ff;
+  --font:'Noto Sans TC',-apple-system,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+.nav{display:flex;align-items:center;gap:4px;padding:12px 32px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.nav__brand{font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--green);margin-right:24px;letter-spacing:-0.5px}
+.nav a{color:var(--text-dim);padding:6px 14px;border-radius:6px;font-size:14px;font-weight:600;transition:all 0.15s}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav a.active{color:var(--text);background:rgba(255,255,255,0.08)}
+
+.container{max-width:960px;margin:0 auto;padding:28px 32px}
+
+h1{font-size:28px;font-weight:900;color:#fff;margin-bottom:24px}
+
+.form{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:28px;
+  padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+}
+.form label{font-size:12px;color:var(--text-dim);display:block;margin-bottom:4px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.5px}
+.form input,.form select{
+  width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);
+  padding:10px 12px;border-radius:8px;font-size:15px;font-family:var(--font);
+}
+.form input:focus,.form select:focus{border-color:var(--accent);outline:none}
+.form .full{grid-column:1/-1}
+.form button{
+  grid-column:1/-1;background:var(--green-2);color:#fff;border:none;
+  padding:12px;border-radius:8px;cursor:pointer;font-size:15px;font-weight:700;
+  font-family:var(--font);margin-top:4px;transition:background 0.15s;
+}
+.form button:hover{background:var(--green)}
+
+.brand-card{
+  padding:18px 20px;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:8px;transition:border-color 0.15s;
+}
+.brand-card:hover{border-color:#2a3040}
+.brand-header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.brand-header .indicator{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.brand-header .name{font-size:20px;font-weight:900;flex:1;color:#fff}
+.brand-header .status{
+  font-size:11px;padding:3px 10px;border-radius:4px;font-family:var(--font-mono);
+  text-transform:uppercase;letter-spacing:0.5px;font-weight:700;
+}
+.status-active{background:rgba(57,211,83,0.1);color:var(--green)}
+.status-paused{background:rgba(212,160,23,0.1);color:var(--yellow)}
+.status-planning{background:rgba(88,166,255,0.1);color:var(--accent)}
+
+.brand-meta{display:flex;gap:20px;font-size:14px;color:var(--text-dim);font-family:var(--font-mono)}
+.brand-meta strong{color:var(--text)}
+
+.task-types{margin-top:10px;display:flex;gap:5px;flex-wrap:wrap}
+.task-types span{
+  font-size:11px;padding:3px 8px;background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;color:var(--text-dim);font-family:var(--font-mono);
+}
+
+.brand-actions{display:flex;gap:8px;margin-top:12px}
+.brand-actions button{
+  background:var(--border);color:var(--text-dim);border:none;padding:7px 14px;
+  border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;
+  font-family:var(--font);transition:all 0.15s;
+}
+.brand-actions button:hover{color:var(--text);background:#2a3040}
+.brand-actions button.del:hover{color:var(--red);background:rgba(229,91,91,0.1)}
+
+.empty-state{
+  color:var(--text-dim);text-align:center;padding:48px;font-size:16px;
+  border:1px dashed var(--border);border-radius:10px;
+}
+
+@media(max-width:700px){.container{padding:20px 16px}.nav{padding:10px 16px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav__brand">SoloHQ</span>
+  <a href="/">Dashboard</a>
+  <a href="/do">Tasks</a>
+  <a href="/matrix">Matrix</a>
+  <a href="/revenue">Revenue</a>
+  <a href="/brands" class="active">Brands</a>
+</nav>
+
+<div class="container">
+  <h1>Brands</h1>
+
+  <div class="form">
+    <div>
+      <label>品牌 ID</label>
+      <input id="f-id" placeholder="coursebloom" />
+    </div>
+    <div>
+      <label>名稱</label>
+      <input id="f-name" placeholder="CourseBloom" />
+    </div>
+    <div>
+      <label>狀態</label>
+      <select id="f-status">
+        <option value="active">Active</option>
+        <option value="paused">Paused</option>
+        <option value="planning">Planning</option>
+      </select>
+    </div>
+    <div>
+      <label>初始收入 (NTD)</label>
+      <input id="f-revenue" type="number" value="0" min="0" />
+    </div>
+    <div class="full">
+      <label>任務類型 (逗號分隔)</label>
+      <input id="f-types" value="reel,article,reply,update" placeholder="reel,article,reply,update,record,thread,yt" />
+    </div>
+    <button id="create-btn">新增品牌</button>
+  </div>
+
+  <div id="brands"></div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+const { api, formatNTD, el, $, setupAuth, daysSince, cooldownColor, cooldownLabel } = SoloHQ
+setupAuth()
+
+$('#create-btn').addEventListener('click', async () => {
+  const id = $('#f-id').value.trim()
+  const name = $('#f-name').value.trim()
+  if (!id || !name) return alert('請填寫 ID 和名稱')
+  const types = $('#f-types').value.split(',').map(s => s.trim()).filter(Boolean)
+  await api('POST', '/api/brands', {
+    id, name,
+    status: $('#f-status').value,
+    revenue_total: parseInt($('#f-revenue').value, 10) || 0,
+    task_types: types,
+  })
+  $('#f-id').value = ''
+  $('#f-name').value = ''
+  $('#f-revenue').value = '0'
+  loadBrands()
+})
+
+async function toggleStatus(brand) {
+  const next = brand.status === 'active' ? 'paused' : 'active'
+  await api('PUT', `/api/brands/${brand.id}`, { status: next })
+  loadBrands()
+}
+async function deleteBrand(id) {
+  if (!confirm(`確定刪除品牌 ${id}？`)) return
+  await api('DELETE', `/api/brands/${id}`)
+  loadBrands()
+}
+
+async function loadBrands() {
+  const { brands } = await api('GET', '/api/brands')
+  const container = $('#brands')
+  container.innerHTML = ''
+  if (brands.length === 0) {
+    container.innerHTML = '<div class="empty-state">尚無品牌，新增第一個吧</div>'
+    return
+  }
+  for (const brand of brands) {
+    const days = daysSince(brand.last_action_at)
+    const statusCls = `status-${brand.status || 'active'}`
+    container.appendChild(el('div', { className: 'brand-card' }, [
+      el('div', { className: 'brand-header' }, [
+        el('span', { className: 'indicator', style: { backgroundColor: cooldownColor(days) } }),
+        el('span', { className: 'name', textContent: brand.name }),
+        el('span', { className: `status ${statusCls}`, textContent: brand.status || 'active' }),
+      ]),
+      el('div', { className: 'brand-meta' }, [
+        el('span', { innerHTML: `收入: <strong>${formatNTD(brand.revenue_total)}</strong>` }),
+        el('span', { textContent: `最後行動: ${cooldownLabel(days)}` }),
+        el('span', { textContent: `ID: ${brand.id}` }),
+      ]),
+      el('div', { className: 'task-types' },
+        (brand.task_types || []).map(t => el('span', { textContent: t }))
+      ),
+      el('div', { className: 'brand-actions' }, [
+        el('button', { textContent: brand.status === 'active' ? '暫停' : '啟用', onClick: () => toggleStatus(brand) }),
+        el('button', { className: 'del', textContent: '刪除', onClick: () => deleteBrand(brand.id) }),
+      ]),
+    ]))
+  }
+}
+loadBrands()
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloHQ — Content Matrix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10;--surface:#12151c;--border:#1e232e;--text:#d1d5e0;--text-dim:#545d6e;
+  --green:#39d353;--green-2:#26a641;--green-3:#006d32;--green-4:#0e4429;
+  --yellow:#d4a017;--red:#e55b5b;--accent:#58a6ff;
+  --font:'Noto Sans TC',-apple-system,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+
+.nav{display:flex;align-items:center;gap:4px;padding:12px 32px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.nav__brand{font-family:var(--font-mono);font-weight:700;font-size:16px;color:var(--green);margin-right:24px;letter-spacing:-0.5px}
+.nav a{color:var(--text-dim);padding:6px 14px;border-radius:6px;font-size:14px;font-weight:600;transition:all 0.15s}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,0.04)}
+.nav a.active{color:var(--text);background:rgba(255,255,255,0.08)}
+
+.container{max-width:960px;margin:0 auto;padding:28px 32px}
+
+h1{font-size:28px;font-weight:900;color:#fff;margin-bottom:20px}
+
+.brand-picker{margin-bottom:20px}
+.brand-picker select{
+  background:var(--surface);color:var(--text);border:1px solid var(--border);
+  padding:10px 16px;border-radius:8px;font-size:15px;font-family:var(--font);
+  min-width:240px;cursor:pointer;transition:border-color 0.15s;
+}
+.brand-picker select:hover{border-color:#2a3040}
+.brand-picker select:focus{border-color:var(--accent);outline:none}
+
+.add-row{display:flex;gap:8px;margin-bottom:24px}
+.add-row input{
+  flex:1;background:var(--surface);color:var(--text);border:1px solid var(--border);
+  padding:10px 16px;border-radius:8px;font-size:15px;font-family:var(--font);
+}
+.add-row input:focus{border-color:var(--accent);outline:none}
+.add-row button{
+  background:var(--green-2);color:#fff;border:none;padding:10px 20px;
+  border-radius:8px;cursor:pointer;font-size:15px;font-weight:600;font-family:var(--font);
+  transition:background 0.15s;
+}
+.add-row button:hover{background:var(--green)}
+
+/* Matrix */
+.matrix{width:100%;border-collapse:separate;border-spacing:0;margin-bottom:20px}
+.matrix th{
+  text-align:center;font-size:12px;color:var(--text-dim);padding:10px 6px;
+  font-weight:700;font-family:var(--font-mono);letter-spacing:0.5px;
+  border-bottom:1px solid var(--border);text-transform:uppercase;
+}
+.matrix td{padding:6px;text-align:center;border-bottom:1px solid rgba(30,35,46,0.5)}
+.matrix td:first-child{
+  text-align:left;padding-left:14px;font-size:15px;min-width:140px;
+  font-weight:600;color:#fff;
+}
+.matrix tr:hover td{background:rgba(255,255,255,0.015)}
+
+.cell{
+  width:38px;height:38px;border-radius:6px;border:1px solid var(--border);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all 0.15s;font-family:var(--font-mono);
+}
+.cell.empty{background:var(--surface)}
+.cell.empty:hover{background:#181d28;border-color:#2a3040;transform:scale(1.08)}
+.cell.draft{background:var(--green-4);border-color:var(--green-3);color:var(--green)}
+.cell.done{background:var(--green-2);border-color:var(--green);color:#fff;box-shadow:0 0 8px rgba(57,211,83,0.15)}
+
+.topic-del{
+  background:none;border:none;color:var(--text-dim);cursor:pointer;
+  font-size:14px;padding:2px 6px;margin-left:8px;opacity:0;transition:all 0.15s;
+}
+.matrix tr:hover .topic-del{opacity:1}
+.topic-del:hover{color:var(--red)}
+
+.empty-state{
+  color:var(--text-dim);text-align:center;padding:48px;font-size:16px;
+  border:1px dashed var(--border);border-radius:10px;
+}
+
+@media(max-width:700px){
+  .container{padding:20px 16px}.nav{padding:10px 16px}
+  .cell{width:32px;height:32px}
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav__brand">SoloHQ</span>
+  <a href="/">Dashboard</a>
+  <a href="/do">Tasks</a>
+  <a href="/matrix" class="active">Matrix</a>
+  <a href="/revenue">Revenue</a>
+  <a href="/brands">Brands</a>
+</nav>
+
+<div class="container">
+  <h1>Content Matrix</h1>
+
+  <div class="brand-picker">
+    <select id="brand-picker"><option value="">選擇品牌...</option></select>
+  </div>
+
+  <div class="add-row" id="add-row" style="display:none">
+    <input id="topic-input" placeholder="新增主題..." />
+    <button id="add-topic-btn">新增</button>
+  </div>
+
+  <div id="matrix-container"></div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+const { api, el, $, setupAuth } = SoloHQ
+setupAuth()
+
+const CELL_TYPES = ['article','yt','reel1','reel2','reel3','thread1','thread2']
+const CELL_LABELS = {article:'Article',yt:'YT',reel1:'R1',reel2:'R2',reel3:'R3',thread1:'T1',thread2:'T2'}
+let currentBrand = ''
+
+async function loadBrands() {
+  const { brands } = await api('GET', '/api/brands')
+  const picker = $('#brand-picker')
+  for (const b of brands) picker.appendChild(el('option', { value: b.id, textContent: b.name }))
+}
+
+$('#brand-picker').addEventListener('change', (e) => {
+  currentBrand = e.target.value
+  $('#add-row').style.display = currentBrand ? 'flex' : 'none'
+  if (currentBrand) loadMatrix(); else $('#matrix-container').innerHTML = ''
+})
+
+$('#add-topic-btn').addEventListener('click', async () => {
+  const input = $('#topic-input')
+  const title = input.value.trim()
+  if (!title || !currentBrand) return
+  await api('POST', '/api/topics', { brand_id: currentBrand, title })
+  input.value = ''
+  loadMatrix()
+})
+$('#topic-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#add-topic-btn').click() })
+
+async function toggleCell(cellId) {
+  await api('PUT', `/api/cells/${cellId}`, {})
+  loadMatrix()
+}
+async function deleteTopic(topicId) {
+  if (!confirm('確定刪除此主題？')) return
+  await api('DELETE', `/api/topics/${topicId}`)
+  loadMatrix()
+}
+
+async function loadMatrix() {
+  if (!currentBrand) return
+  const container = $('#matrix-container')
+  try {
+    const { topics } = await api('GET', `/api/topics/${currentBrand}`)
+    if (topics.length === 0) {
+      container.innerHTML = '<div class="empty-state">尚無主題，在上方新增第一個主題</div>'
+      return
+    }
+
+    const table = el('table', { className: 'matrix' })
+    const thead = el('thead')
+    thead.appendChild(el('tr', {}, [
+      el('th', { textContent: '主題' }),
+      ...CELL_TYPES.map(t => el('th', { textContent: CELL_LABELS[t] })),
+    ]))
+    table.appendChild(thead)
+
+    const tbody = el('tbody')
+    for (const topic of topics) {
+      const cells = topic.cells || []
+      tbody.appendChild(el('tr', {}, [
+        el('td', {}, [
+          document.createTextNode(topic.title),
+          el('button', { className: 'topic-del', textContent: '×', onClick: () => deleteTopic(topic.id) }),
+        ]),
+        ...CELL_TYPES.map(type => {
+          const cell = cells.find(c => c.type === type)
+          if (!cell) return el('td')
+          const st = cell.status || 'empty'
+          return el('td', {}, [
+            el('div', {
+              className: `cell ${st}`,
+              textContent: st === 'done' ? '✓' : '',
+              onClick: () => toggleCell(cell.id),
+            }),
+          ])
+        }),
+      ]))
+    }
+    table.appendChild(tbody)
+    container.innerHTML = ''
+    container.appendChild(table)
+  } catch (err) {
+    container.innerHTML = `<div class="empty-state" style="color:var(--red)">Error: ${err.message}</div>`
+  }
+}
+loadBrands()
+</script>
+</body>
+</html>

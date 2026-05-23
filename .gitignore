@@ -1,0 +1,6 @@
+node_modules/
+data/
+.deploy-state.json
+.pkg-hash
+.pm2-ecosystem.json
+.claude/

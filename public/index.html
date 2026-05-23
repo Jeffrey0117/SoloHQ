@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloHQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0a0c10;
+  --surface:  #12151c;
+  --border:   #1e232e;
+  --text:     #d1d5e0;
+  --text-dim: #545d6e;
+  --green:    #39d353;
+  --green-2:  #26a641;
+  --green-3:  #006d32;
+  --green-4:  #0e4429;
+  --yellow:   #d4a017;
+  --red:      #e55b5b;
+  --accent:   #58a6ff;
+  --font:     'Noto Sans TC', -apple-system, sans-serif;
+  --font-mono:'JetBrains Mono', 'SF Mono', monospace;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+a { color: var(--accent); text-decoration: none; }
+
+/* ── Nav ─────────────────────────── */
+.nav {
+  display: flex; align-items: center; gap: 4px;
+  padding: 12px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.nav__brand {
+  font-family: var(--font-mono); font-weight: 700; font-size: 16px;
+  color: var(--green); margin-right: 24px; letter-spacing: -0.5px;
+}
+.nav a {
+  color: var(--text-dim); padding: 6px 14px; border-radius: 6px;
+  font-size: 14px; font-weight: 600; transition: all 0.15s;
+}
+.nav a:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.nav a.active { color: var(--text); background: rgba(255,255,255,0.08); }
+
+/* ── Layout ──────────────────────── */
+.container { max-width: 960px; margin: 0 auto; padding: 28px 32px; }
+
+/* ── Hero Stats ──────────────────── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+  transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: #2a3040; }
+.stat-card__label {
+  font-size: 12px; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.8px; font-family: var(--font-mono); margin-bottom: 6px;
+}
+.stat-card__value {
+  font-size: 36px; font-weight: 900; line-height: 1;
+  font-family: var(--font-mono); color: #fff; margin-bottom: 2px;
+}
+.stat-card__sub {
+  font-size: 14px; color: var(--text-dim); font-family: var(--font-mono);
+}
+
+/* ── Graph ────────────────────────── */
+.graph-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 20px 24px; margin-bottom: 28px;
+}
+.graph-section__title {
+  font-size: 13px; color: var(--text-dim); font-family: var(--font-mono);
+  text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.graph-section__title::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); display: inline-block;
+  box-shadow: 0 0 8px var(--green);
+}
+
+/* ── Sections ─────────────────────── */
+.section { margin-bottom: 28px; }
+.section__header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section__title {
+  font-size: 13px; color: var(--text-dim); font-family: var(--font-mono);
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
+.section__link { font-size: 13px; font-family: var(--font-mono); }
+
+/* ── Brand rows ───────────────────── */
+.brand-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 18px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 6px; font-size: 16px; transition: border-color 0.15s;
+}
+.brand-row:hover { border-color: #2a3040; }
+.indicator { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 6px currentColor; }
+.brand-name { flex: 1; font-weight: 600; color: #fff; }
+.brand-cooldown { min-width: 70px; text-align: right; font-family: var(--font-mono); font-size: 14px; }
+.brand-revenue { min-width: 110px; text-align: right; font-family: var(--font-mono); font-size: 14px; color: var(--green); font-weight: 700; }
+
+/* ── Tasks ─────────────────────────── */
+.task-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 5px; font-size: 16px;
+}
+.task-row.done { opacity: 0.4; }
+.task-row.skipped { opacity: 0.35; }
+.task-icon { font-size: 16px; width: 22px; text-align: center; color: var(--text-dim); font-family: var(--font-mono); }
+.task-icon.done { color: var(--green); }
+.task-desc { flex: 1; }
+
+/* ── Revenue bar ──────────────────── */
+.revenue-bar { margin-top: 8px; }
+.revenue-bar__labels {
+  display: flex; justify-content: space-between;
+  font-size: 13px; color: var(--text-dim); font-family: var(--font-mono);
+  margin-bottom: 8px;
+}
+.revenue-bar__labels strong { color: var(--green); }
+.revenue-bar__track {
+  height: 14px; background: var(--border); border-radius: 7px;
+  overflow: hidden; position: relative;
+}
+.revenue-bar__fill {
+  height: 100%; border-radius: 7px;
+  background: linear-gradient(90deg, var(--green-4), var(--green-3), var(--green-2), var(--green));
+  transition: width 0.6s ease;
+  box-shadow: 0 0 12px var(--green-4);
+}
+.revenue-bar__pct {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; font-family: var(--font-mono); color: #fff; font-weight: 700;
+}
+
+/* ── Empty ─────────────────────────── */
+.empty-state {
+  color: var(--text-dim); text-align: center; padding: 32px;
+  font-size: 15px; border: 1px dashed var(--border); border-radius: 8px;
+}
+
+/* ── Responsive ───────────────────── */
+@media (max-width: 700px) {
+  .container { padding: 20px 16px; }
+  .nav { padding: 10px 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card__value { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav__brand">SoloHQ</span>
+  <a href="/" class="active">Dashboard</a>
+  <a href="/do">Tasks</a>
+  <a href="/matrix">Matrix</a>
+  <a href="/revenue">Revenue</a>
+  <a href="/brands">Brands</a>
+</nav>
+
+<div class="container">
+  <div id="stats" class="stats-grid"></div>
+
+  <div class="graph-section">
+    <div class="graph-section__title">Contribution Graph</div>
+    <div id="graph"></div>
+  </div>
+
+  <div class="section">
+    <div class="section__header">
+      <span class="section__title">Brands</span>
+      <a href="/brands" class="section__link">管理 &rarr;</a>
+    </div>
+    <div id="brands"></div>
+  </div>
+
+  <div class="section">
+    <div class="section__header">
+      <span class="section__title">Today</span>
+      <a href="/do" class="section__link">執行 &rarr;</a>
+    </div>
+    <div id="tasks"></div>
+  </div>
+
+  <div class="section">
+    <div id="revenue-bar"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+<script>
+const { api, renderGraph, renderBrandList, renderTaskList, renderRevenueBar, renderStats, setupAuth } = SoloHQ
+
+setupAuth()
+
+async function refresh() {
+  try {
+    const data = await api('GET', '/api/dashboard')
+    renderStats(document.getElementById('stats'), data.stats)
+    renderGraph(document.getElementById('graph'), data.graph)
+    renderBrandList(document.getElementById('brands'), data.brands)
+    renderTaskList(document.getElementById('tasks'), data.tasks)
+    renderRevenueBar(
+      document.getElementById('revenue-bar'),
+      data.stats.total_revenue,
+      data.stats.revenue_goal
+    )
+  } catch (err) {
+    console.error('Dashboard refresh failed:', err)
+  }
+}
+
+refresh()
+setInterval(refresh, 60000)
+</script>
+</body>
+</html>
