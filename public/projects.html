@@ -183,7 +183,7 @@ a { color:var(--blue); text-decoration:none; }
     <div class="tools">
       <input class="search" id="search" placeholder="搜尋名稱 / 簡介 / 技術棧…">
       <button class="btn" id="viewToggle" title="切換 卡片 / 清單">☰ 清單</button>
-      <button class="btn" id="genAll" title="幫所有沒介紹的專案用 AI 生成一句介紹">✨ 補介紹</button>
+      <button class="btn" id="genAll" title="用 AI 幫尚未整理的專案分類 + 生成介紹">✨ AI 整理</button>
       <button class="btn" id="rescan">↻ 重新掃描</button>
     </div>
   </div>
@@ -212,11 +212,16 @@ document.getElementById('theme').onclick = () => {
 
 /* ── data + config ── */
 const CATS = [
-  { id:'product', label:'產品 (賣錢)' },
-  { id:'infra', label:'基礎設施' },
-  { id:'practice', label:'練習' },
-  { id:'uncategorized', label:'未分類' },
+  { id:'content-gen', label:'內容生成 (創作)' },
+  { id:'platform', label:'線上平台 (販售)' },
+  { id:'blog', label:'內容經營 (部落格)' },
+  { id:'product', label:'產品 (SaaS)' },
+  { id:'infra', label:'工具/基礎設施' },
+  { id:'other', label:'其他' },
 ];
+const CAT_ORDER = CATS.map((c) => c.id);
+const KNOWN_CAT = new Set(CAT_ORDER);
+function effCat(p) { return KNOWN_CAT.has(p.category) ? p.category : 'other'; }
 const COMPLETENESS = [
   { key:'readme', label:'README' }, { key:'logo', label:'LOGO' }, { key:'deploy', label:'部署' },
   { key:'git', label:'GitHub' }, { key:'license', label:'授權' }, { key:'favicon', label:'favicon' }, { key:'tests', label:'測試' },
@@ -269,9 +274,12 @@ async function genOne(id, btn) {
   try {
     const res = await fetch('/api/projects/' + encodeURIComponent(id) + '/intro', { method:'POST' });
     const data = await res.json();
-    if (data.project && data.project.summary) {
+    if (data.project) {
       const p = ALL.find((x) => x.id === id);
-      if (p) { p.summary = data.project.summary; p.summarySource = data.project.summarySource || 'ai'; }
+      if (p) {
+        p.summary = data.project.summary; p.summarySource = data.project.summarySource;
+        p.category = data.project.category; p.categorySource = data.project.categorySource;
+      }
       return true;
     }
   } catch { /* fall through */ }
@@ -295,15 +303,14 @@ async function load(full) {
   render();
 }
 
+function catCount(id) { return ALL.filter((p) => effCat(p) === id).length; }
 function renderStats() {
-  const own = ALL.filter((p)=>p.repo&&p.repo.status==='remote'&&!p.repo.isClone).length;
-  const clone = ALL.filter((p)=>p.repo&&p.repo.isClone).length;
   const tiles = [
     { num: ALL.length, lbl:'總專案', a:'' },
-    { num: counts(ALL,'category','product'), lbl:'產品 (賣錢)', a:'accent-green' },
-    { num: own, lbl:'自己的 repo', a:'accent-blue' },
-    { num: clone, lbl:'clone 別人的', a:'accent-violet' },
-    { num: counts(ALL,'category','uncategorized'), lbl:'待分類', a:'accent-amber' },
+    { num: catCount('product'), lbl:'產品 SaaS', a:'accent-green' },
+    { num: catCount('platform'), lbl:'線上平台', a:'accent-blue' },
+    { num: catCount('content-gen'), lbl:'內容生成', a:'accent-violet' },
+    { num: catCount('other'), lbl:'待整理', a:'accent-amber' },
   ];
   document.getElementById('stats').innerHTML = tiles.map((t) =>
     `<div class="tile ${t.a}"><div class="num">${t.num}</div><div class="lbl">${t.lbl}</div></div>`).join('');
@@ -330,7 +337,7 @@ function renderChips() {
 }
 
 function matches(p) {
-  if (filterCat !== 'all' && p.category !== filterCat) return false;
+  if (filterCat !== 'all' && effCat(p) !== filterCat) return false;
   if (filterType !== 'all' && p.type !== filterType) return false;
   if (filterRepo !== 'all') { const f = REPO_FILTERS.find((x)=>x.id===filterRepo); if (f && !f.test(p)) return false; }
   if (query) {
@@ -366,11 +373,10 @@ function render() {
   const list = ALL.filter(matches);
   const wall = document.getElementById('wall');
   if (list.length === 0) { wall.innerHTML = '<div class="empty-state">沒有符合的專案 🔍</div>'; return; }
-  const order = ['product','infra','practice','uncategorized'];
-  const groups = filterCat === 'all' ? order : [filterCat];
+  const groups = filterCat === 'all' ? CAT_ORDER : [filterCat];
   let html = '', i = 0;
   for (const g of groups) {
-    const items = list.filter((p)=>p.category===g);
+    const items = list.filter((p)=>effCat(p)===g);
     if (!items.length) continue;
     html += `<div class="section">${catLabel(g)} <span class="n">${items.length}</span></div>`;
     html += view === 'list'
@@ -412,18 +418,18 @@ vt.addEventListener('click', () => {
 const genAllBtn = document.getElementById('genAll');
 genAllBtn.addEventListener('click', async () => {
   if (batching) { batching = false; return; }          // click again to stop
-  const missing = ALL.filter((p) => !p.summary);
-  if (!missing.length) { genAllBtn.textContent = '✅ 都有介紹了'; setTimeout(() => genAllBtn.textContent = '✨ 補介紹', 1500); return; }
+  const todo = ALL.filter((p) => p.categorySource !== 'ai' && p.categorySource !== 'manual');
+  if (!todo.length) { genAllBtn.textContent = '✅ 都整理好了'; setTimeout(() => genAllBtn.textContent = '✨ AI 整理', 1500); return; }
   batching = true;
   let done = 0;
-  for (const p of missing) {
+  for (const p of todo) {
     if (!batching) break;
-    genAllBtn.textContent = `⏳ ${done}/${missing.length}（停止）`;
+    genAllBtn.textContent = `⏳ ${done}/${todo.length}（停止）`;
     await genOne(p.id, null);
     done++; render();
   }
   batching = false;
-  genAllBtn.textContent = '✨ 補介紹';
+  genAllBtn.textContent = '✨ AI 整理';
 });
 
 load();

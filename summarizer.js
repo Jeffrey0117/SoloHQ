@@ -76,23 +76,48 @@ function runClaude(prompt) {
 
 function clean(text) {
   return String(text)
-    .split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0] // first non-empty line
-    ?.replace(/^["'「『]|["'」』]$/g, '')                    // strip wrapping quotes
-    .replace(/^[-*•]\s*/, '')                                 // strip bullet
-    .slice(0, 80) || ''
+    .replace(/^["'「『]|["'」』]$/g, '') // strip wrapping quotes
+    .replace(/^[-*•]\s*/, '')           // strip bullet
+    .trim().slice(0, 80)
 }
 
-/** Returns a one-sentence Traditional-Chinese intro for the project at `dir`. */
-async function generateIntro(dir) {
+const CATEGORIES = ['content-gen', 'platform', 'blog', 'product', 'infra', 'other']
+
+function parseAnalysis(text) {
+  let category = ''
+  let intro = ''
+  for (const line of String(text).split(/\r?\n/)) {
+    const c = line.match(/^\s*CATEGORY\s*[:：]\s*(.+)/i)
+    if (c) category = c[1].trim().toLowerCase().replace(/[^a-z-]/g, '')
+    const n = line.match(/^\s*INTRO\s*[:：]\s*(.+)/i)
+    if (n) intro = clean(n[1])
+  }
+  if (!CATEGORIES.includes(category)) category = 'other'
+  return { category, intro }
+}
+
+/**
+ * Reads a project and asks claude to BOTH classify it (into one of CATEGORIES)
+ * and write a one-line Traditional-Chinese intro. Returns { category, intro }.
+ */
+async function analyze(dir) {
   const context = buildContext(dir)
   const prompt =
-    '你是工程助理。根據以下專案資訊,用繁體中文寫「一句話」說明這個專案在做什麼。\n' +
-    '規則:直接給結論、≤40字、不要前言、不要 markdown、不要引號、不要句號以外的標點堆疊。\n\n' +
+    '你是工程助理。讀以下專案資訊,做兩件事。\n' +
+    '1) 判斷它屬於哪一類,只能從這些 id 挑一個:\n' +
+    '   content-gen = 內容生成工具(產生短影音腳本/圖文/字幕等)\n' +
+    '   platform = 拿來販售的線上平台(電商/訂閱/金流)\n' +
+    '   blog = 部落格 / 內容經營網站\n' +
+    '   product = 實際給人用的 SaaS 產品(如圖床、英文學習)\n' +
+    '   infra = 自用工具 / bot / SDK / 部署 / 基礎設施\n' +
+    '   other = 練習、clone、其他\n' +
+    '2) 用繁體中文寫一句話介紹(≤40字,直接給結論)。\n\n' +
+    '只輸出兩行,嚴格照這個格式(不要其他文字):\n' +
+    'CATEGORY: <id>\n' +
+    'INTRO: <一句話>\n\n' +
     context
   const raw = await runClaude(prompt)
-  const intro = clean(raw)
-  if (!intro) throw new Error('empty intro from claude')
-  return intro
+  return parseAnalysis(raw)
 }
 
-module.exports = { generateIntro, CLAUDE }
+module.exports = { analyze, CATEGORIES, CLAUDE }

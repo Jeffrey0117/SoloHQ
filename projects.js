@@ -183,14 +183,18 @@ function getCompleteness(dir, pkg) {
   return { readme, logo, license, favicon, deploy, tests, git }
 }
 
+// Heuristic fallback only — AI (see generateIntroFor) gives the real categories.
+// Must return one of: content-gen | platform | blog | product | infra | other
 function guessCategory(card) {
-  const c = card.completeness
   const name = card.name.toLowerCase()
-  if (c.deploy) return 'product'
-  if (card.type === 'cli' || card.type === 'library' || card.type === 'bot') return 'infra'
-  if (/(sdk|kit|cli|setup|tool|gateway|infra|template|boilerplate|starter)/.test(name)) return 'infra'
-  if (!c.readme && !c.git) return 'practice'
-  return 'uncategorized'
+  const t = card.type
+  if (t === 'cli' || t === 'library' || t === 'bot' ||
+      /(sdk|kit|cli|setup|tool|gateway|infra|proxy|server|bot|template|boilerplate|starter)/.test(name)) return 'infra'
+  if (/(blog|post|article|note|content|writing|evernote|threads|matrix)/.test(name)) return 'blog'
+  if (/(shop|store|pay|sell|commerce|market|cart|subscription|paygate|gumroad)/.test(name)) return 'platform'
+  if (/(gen|generate|script|reel|video|caption|ocr|maker|creator|capture|shot)/.test(name)) return 'content-gen'
+  if (card.completeness && card.completeness.deploy) return 'product'
+  return 'other'
 }
 
 // ── fingerprint + lastModified (cheap, top-level only) ───
@@ -291,14 +295,18 @@ function saveSummaries(s) {
   try { fs.writeFileSync(SUMMARIES_FILE, JSON.stringify(s, null, 2), 'utf-8') } catch { /* ignore */ }
 }
 
-// Fill in an AI-generated intro only when the project has no README/package summary.
-function applySummary(card, summary) {
-  if (card.summary || !summary || !summary.intro) return card
-  return { ...card, summary: summary.intro, summarySource: 'ai' }
+// Apply AI analysis: intro fills in only when there's no README/package summary;
+// category is used unless the user set a manual override.
+function applyAnalysis(card, ai) {
+  if (!ai) return card
+  const merged = { ...card }
+  if (!card.summary && ai.intro) { merged.summary = ai.intro; merged.summarySource = 'ai' }
+  if (ai.category && card.categorySource !== 'manual') { merged.category = ai.category; merged.categorySource = 'ai' }
+  return merged
 }
 
-function decorate(card, override, summary) {
-  return applySummary(applyOverride(card, override), summary)
+function decorate(card, override, ai) {
+  return applyAnalysis(applyOverride(card, override), ai)
 }
 
 // ── public API ───────────────────────────────────────────
@@ -357,10 +365,10 @@ async function generateIntroFor(id) {
   const cache = loadCache()
   const card = cache[id]
   if (!card) return null
-  const { generateIntro } = require('./summarizer')
-  const intro = await generateIntro(card.path)
+  const { analyze } = require('./summarizer')
+  const { category, intro } = await analyze(card.path)
   const summaries = loadSummaries()
-  summaries[id] = { intro, source: 'ai', at: new Date().toISOString() }
+  summaries[id] = { intro, category, source: 'ai', at: new Date().toISOString() }
   saveSummaries(summaries)
   const overrides = loadOverrides()
   return decorate(card, overrides[id], summaries[id])
