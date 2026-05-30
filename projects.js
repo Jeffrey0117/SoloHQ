@@ -122,6 +122,39 @@ function getGitRemote(dir) {
   return m ? m[1].trim() : null
 }
 
+// Your GitHub handle — anything NOT owned by this is treated as a clone/fork.
+const OWNER = (process.env.SOLOHQ_GH_USER || 'Jeffrey0117').toLowerCase()
+
+function parseRemote(url) {
+  const known = url.match(/(github\.com|gitlab\.com|bitbucket\.org)[/:]([^/]+)\/([^/\s]+?)(?:\.git)?\/?$/i)
+  if (known) return { host: known[1].toLowerCase(), owner: known[2], name: known[3] }
+  const generic = url.match(/[/:]([^/]+)\/([^/\s]+?)(?:\.git)?\/?$/)
+  if (generic) return { host: 'git', owner: generic[1], name: generic[2] }
+  return null
+}
+
+/** Repo status: none (no .git) / local (.git, no remote) / remote (+ owner, isClone). */
+function getRepo(dir) {
+  if (!exists(path.join(dir, '.git'))) {
+    return { status: 'none', host: null, owner: null, name: null, isClone: false, url: null, visibility: null }
+  }
+  const url = getGitRemote(dir)
+  if (!url) {
+    return { status: 'local', host: null, owner: null, name: null, isClone: false, url: null, visibility: null }
+  }
+  const p = parseRemote(url)
+  const owner = p ? p.owner : null
+  return {
+    status: 'remote',
+    host: p ? p.host : null,
+    owner,
+    name: p ? p.name : null,
+    isClone: Boolean(owner) && owner.toLowerCase() !== OWNER,
+    url,
+    visibility: null, // filled later by an optional GitHub lookup
+  }
+}
+
 function getCompleteness(dir, pkg) {
   const scripts = (pkg && pkg.scripts) || {}
   const testScript = typeof scripts.test === 'string' && !/no test specified/i.test(scripts.test)
@@ -192,7 +225,7 @@ function buildCard(dir) {
   const name = path.basename(dir)
   const pkg = readPackageJson(dir)
   const completeness = getCompleteness(dir, pkg)
-  const gitRemote = getGitRemote(dir)
+  const repo = getRepo(dir)
 
   const card = {
     id: name,
@@ -203,8 +236,9 @@ function buildCard(dir) {
     stack: detectStack(dir, pkg),
     language: detectLanguage(dir, pkg),
     lastModified: lastModified(dir),
-    gitRemote,
-    pushed: Boolean(gitRemote),
+    repo,
+    gitRemote: repo.url,
+    pushed: repo.status === 'remote',
     completeness,
     score: Object.values(completeness).filter(Boolean).length,
     fingerprint: cheapFingerprint(dir),
@@ -271,8 +305,8 @@ function scan(opts) {
     const fp = cheapFingerprint(full)
     const cached = cache[dirent.name]
     let card
-    if (!force && cached && cached.fingerprint === fp) {
-      card = cached            // unchanged → reuse (the fast path)
+    if (!force && cached && cached.fingerprint === fp && cached.repo) {
+      card = cached            // unchanged → reuse (the fast path); cached.repo guards old-schema cards
     } else {
       card = buildCard(full)
     }

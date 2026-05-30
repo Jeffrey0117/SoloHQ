@@ -63,6 +63,12 @@ a { color:var(--accent); text-decoration:none; }
 .badge.on { background:rgba(57,211,83,.13); color:var(--green); }
 .badge.off { background:rgba(229,91,91,.10); color:#7a5050; }
 
+.rbadge { font-size:10.5px; padding:2px 8px; border-radius:5px; font-weight:600; align-self:flex-start; }
+.rbadge.none { background:rgba(255,255,255,.05); color:var(--text-dim); }
+.rbadge.local { background:rgba(212,160,23,.13); color:var(--yellow); }
+.rbadge.clone { background:rgba(167,139,250,.14); color:#a78bfa; }
+.rbadge.own { background:rgba(57,211,83,.13); color:var(--green); }
+
 .card__bottom { display:flex; align-items:center; justify-content:space-between; gap:8px;
   border-top:1px solid var(--border); padding-top:9px; margin-top:2px; }
 .cat { font-size:12px; background:var(--bg); border:1px solid var(--border); color:var(--text);
@@ -97,6 +103,7 @@ a { color:var(--accent); text-decoration:none; }
   </div>
 
   <div class="chips" id="catChips"></div>
+  <div class="chips" id="repoChips"></div>
   <div class="chips" id="typeChips"></div>
 
   <div id="wall"></div>
@@ -119,10 +126,28 @@ const COMPLETENESS = [
   { key:'tests', label:'測試' },
 ];
 
+const REPO_FILTERS = [
+  { id:'all', label:'全部', test:() => true },
+  { id:'own', label:'● 自己的 repo', test:(p) => p.repo && p.repo.status==='remote' && !p.repo.isClone },
+  { id:'clone', label:'⑂ clone 別人的', test:(p) => p.repo && p.repo.isClone },
+  { id:'local', label:'本機未推', test:(p) => p.repo && p.repo.status==='local' },
+  { id:'nogit', label:'沒有 git', test:(p) => !p.repo || p.repo.status==='none' },
+];
+
 let ALL = [];
 let filterCat = 'all';
 let filterType = 'all';
+let filterRepo = 'all';
 let query = '';
+
+function repoBadge(p) {
+  const r = p.repo || { status:'none' };
+  if (r.status === 'none') return '<span class="rbadge none">無 git</span>';
+  if (r.status === 'local') return '<span class="rbadge local">本機未推</span>';
+  if (r.isClone) return `<span class="rbadge clone">⑂ clone${r.owner ? ' · ' + r.owner : ''}</span>`;
+  const vis = r.visibility === 'private' ? ' · 🔒私人' : r.visibility === 'public' ? ' · 🌐公開' : '';
+  return `<span class="rbadge own">● 自己的${vis}</span>`;
+}
 
 function relTime(iso) {
   if (!iso) return '—';
@@ -161,11 +186,22 @@ function renderChips() {
   for (const t of types) th += `<span class="chip ${filterType===t?'active':''}" data-type="${t}">${t}<span class="n">${counts(ALL,'type',t)}</span></span>`;
   typeEl.innerHTML = th;
   typeEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterType = el.dataset.type; render(); });
+
+  const repoEl = document.getElementById('repoChips');
+  repoEl.innerHTML = REPO_FILTERS.map((f) => {
+    const n = f.id === 'all' ? ALL.length : ALL.filter(f.test).length;
+    return `<span class="chip ${filterRepo===f.id?'active':''}" data-repo="${f.id}">${f.label}<span class="n">${n}</span></span>`;
+  }).join('');
+  repoEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterRepo = el.dataset.repo; render(); });
 }
 
 function matches(p) {
   if (filterCat !== 'all' && p.category !== filterCat) return false;
   if (filterType !== 'all' && p.type !== filterType) return false;
+  if (filterRepo !== 'all') {
+    const f = REPO_FILTERS.find((x) => x.id === filterRepo);
+    if (f && !f.test(p)) return false;
+  }
   if (query) {
     const hay = (p.name + ' ' + (p.summary || '') + ' ' + (p.stack || []).join(' ')).toLowerCase();
     if (!hay.includes(query)) return false;
@@ -187,6 +223,7 @@ function cardHtml(p) {
     </div>
     <div class="summary ${p.summary ? '' : 'empty'}">${p.summary || '（沒有簡介 — 缺 README/description）'}</div>
     <div class="stack">${stack}<span class="lang">${p.language}</span></div>
+    <div>${repoBadge(p)}</div>
     <div class="badges">${badges}</div>
     <div class="card__bottom">
       <select class="cat" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">
