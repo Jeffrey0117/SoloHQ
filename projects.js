@@ -389,4 +389,10 @@ function setOverride(id, patch) {
   return card
 }
 
-module.exports = { scan, getCards, setOverride, generateIntroFor, CODE_DIR }
+/** Look up a project's absolute path by id (from cache) — for open-in-editor/folder. */
+function getPath(id) {
+  const cache = loadCache()
+  return cache[id] && typeof cache[id].path === 'string' ? cache[id].path : null
+}
+
+module.exports = { scan, getCards, setOverride, generateIntroFor, getPath, CODE_DIR }
