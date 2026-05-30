@@ -631,7 +631,7 @@ const server = http.createServer(async (req, res) => {
     const pathname = decodeURIComponent(url.pathname)
 
     // Static files
-    if (pathname.startsWith('/app.js') || pathname.startsWith('/favicon')) {
+    if (pathname.startsWith('/app.js') || pathname.startsWith('/theme.js') || pathname.startsWith('/favicon')) {
       return serveStatic(res, path.join(__dirname, 'public', pathname.slice(1)))
     }
 
