@@ -1,115 +1,189 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-TW" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SoloHQ · 專案牆</title>
+<title>SoloHQ · Projects</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
+/* ── Light theme (default) ── */
 :root {
-  --bg:#0a0c10; --surface:#12151c; --border:#1e232e; --text:#d1d5e0; --text-dim:#545d6e;
-  --green:#39d353; --yellow:#d4a017; --red:#e55b5b; --accent:#58a6ff;
-  --font:'Noto Sans TC',-apple-system,sans-serif; --font-mono:'JetBrains Mono','SF Mono',monospace;
+  --bg:#f6f7f4; --surface:#ffffff; --surface-2:#f0f1ec; --border:#e4e6df; --border-2:#d6d9cf;
+  --text:#1b1e23; --text-dim:#6c7480; --text-faint:#9aa1ab;
+  --green:#1f9d4d; --green-soft:rgba(31,157,77,.10);
+  --blue:#2563eb;  --blue-soft:rgba(37,99,235,.10);
+  --amber:#c8881a; --amber-soft:rgba(200,136,26,.12);
+  --violet:#7c5cdb; --violet-soft:rgba(124,92,219,.12);
+  --gray-soft:rgba(108,116,128,.10);
+  --shadow:0 1px 2px rgba(20,25,35,.04), 0 4px 16px rgba(20,25,35,.05);
+  --shadow-h:0 2px 4px rgba(20,25,35,.06), 0 12px 28px rgba(20,25,35,.10);
+  --font:'Noto Sans TC',-apple-system,sans-serif; --mono:'JetBrains Mono','SF Mono',monospace;
 }
-*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
-body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; }
-a { color:var(--accent); text-decoration:none; }
+/* ── Dark theme ── */
+:root[data-theme="dark"] {
+  --bg:#0a0c10; --surface:#12151c; --surface-2:#171b22; --border:#222834; --border-2:#2d3441;
+  --text:#d6dae3; --text-dim:#7c8696; --text-faint:#545d6e;
+  --green:#3fd35a; --green-soft:rgba(57,211,83,.13);
+  --blue:#58a6ff;  --blue-soft:rgba(88,166,255,.13);
+  --amber:#d4a017; --amber-soft:rgba(212,160,23,.14);
+  --violet:#a78bfa; --violet-soft:rgba(167,139,250,.15);
+  --gray-soft:rgba(255,255,255,.05);
+  --shadow:none; --shadow-h:0 0 0 1px var(--border-2);
+}
+* ,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html { color-scheme:light dark; }
+body { background:var(--bg); color:var(--text); font-family:var(--font);
+  min-height:100vh; -webkit-font-smoothing:antialiased; transition:background .25s ease, color .25s ease; }
+a { color:var(--blue); text-decoration:none; }
 
-.nav { display:flex; align-items:center; gap:4px; padding:12px 32px; background:var(--surface);
-  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
-.nav__brand { font-family:var(--font-mono); font-weight:700; font-size:16px; color:var(--green);
-  margin-right:24px; letter-spacing:-0.5px; }
-.nav a { color:var(--text-dim); padding:6px 14px; border-radius:6px; font-size:14px; font-weight:600; transition:all .15s; }
-.nav a:hover { color:var(--text); background:rgba(255,255,255,.04); }
-.nav a.active { color:var(--text); background:rgba(255,255,255,.08); }
+/* ── Nav ── */
+.nav { display:flex; align-items:center; gap:2px; padding:13px 30px; background:var(--surface);
+  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
+.nav__brand { font-family:var(--mono); font-weight:700; font-size:15px; color:var(--green);
+  margin-right:22px; letter-spacing:-.5px; }
+.nav a { color:var(--text-dim); padding:6px 13px; border-radius:7px; font-size:13.5px; font-weight:500; transition:.15s; }
+.nav a:hover { color:var(--text); background:var(--surface-2); }
+.nav a.active { color:var(--text); background:var(--surface-2); font-weight:700; }
+.nav__spacer { flex:1; }
+.icon-btn { background:transparent; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+  width:34px; height:34px; border-radius:8px; font-size:15px; display:grid; place-items:center; transition:.15s; }
+.icon-btn:hover { color:var(--text); border-color:var(--border-2); }
 
-.container { max-width:1200px; margin:0 auto; padding:24px 32px; }
+.container { max-width:1240px; margin:0 auto; padding:26px 30px 60px; }
 
-.toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:18px; }
-.toolbar h1 { font-size:20px; font-weight:900; margin-right:8px; }
-.muted { color:var(--text-dim); font-size:13px; }
-.search { background:var(--surface); border:1px solid var(--border); color:var(--text);
-  border-radius:8px; padding:7px 12px; font-size:14px; font-family:var(--font); min-width:200px; }
+/* ── Header ── */
+.head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.head h1 { font-size:25px; font-weight:900; letter-spacing:-.5px; }
+.head .sub { color:var(--text-dim); font-size:13px; margin-top:3px; }
+.head .sub code { font-family:var(--mono); color:var(--text-faint); }
+.tools { display:flex; gap:9px; align-items:center; }
+.search { background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:9px;
+  padding:9px 13px; font-size:13.5px; font-family:var(--font); min-width:210px; transition:.15s; }
+.search:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px var(--green-soft); }
 .btn { background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;
-  border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; font-family:var(--font); transition:all .15s; }
-.btn:hover { border-color:var(--accent); }
+  border-radius:9px; padding:9px 15px; font-size:13px; font-weight:600; font-family:var(--font); transition:.15s; }
+.btn:hover { border-color:var(--green); color:var(--green); }
 .btn[disabled] { opacity:.5; cursor:default; }
 
-.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+/* ── Stat tiles ── */
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:11px; margin-bottom:22px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:14px 16px; box-shadow:var(--shadow); }
+.tile .num { font-size:26px; font-weight:900; font-family:var(--mono); line-height:1; letter-spacing:-1px; }
+.tile .lbl { font-size:12px; color:var(--text-dim); margin-top:6px; font-weight:500; }
+.tile.accent-green .num { color:var(--green); } .tile.accent-violet .num { color:var(--violet); }
+.tile.accent-amber .num { color:var(--amber); } .tile.accent-blue .num { color:var(--blue); }
+
+/* ── Chips ── */
+.chiprow { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:11px; align-items:center; }
+.chiprow .k { font-size:11px; color:var(--text-faint); font-weight:700; text-transform:uppercase;
+  letter-spacing:1px; margin-right:4px; min-width:38px; }
 .chip { background:var(--surface); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
-  border-radius:999px; padding:5px 13px; font-size:12.5px; font-weight:600; transition:all .12s; }
-.chip:hover { color:var(--text); }
-.chip.active { color:#fff; border-color:var(--accent); background:rgba(88,166,255,.15); }
-.chip .n { color:var(--text-dim); font-family:var(--font-mono); margin-left:5px; font-size:11px; }
-.chip.active .n { color:var(--accent); }
+  border-radius:999px; padding:5px 13px; font-size:12.5px; font-weight:500; transition:.13s; user-select:none; }
+.chip:hover { color:var(--text); border-color:var(--border-2); }
+.chip.active { color:var(--text); border-color:var(--green); background:var(--green-soft); font-weight:700; }
+.chip .n { color:var(--text-faint); font-family:var(--mono); margin-left:6px; font-size:11px; }
+.chip.active .n { color:var(--green); }
 
-.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
-.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px;
-  display:flex; flex-direction:column; gap:9px; transition:border-color .15s; }
-.card:hover { border-color:#2c3442; }
-.card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-.card__name { font-weight:700; font-size:15px; font-family:var(--font-mono); word-break:break-all; }
-.type { font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap;
-  background:rgba(255,255,255,.06); color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; }
-.summary { font-size:12.5px; color:var(--text-dim); line-height:1.5; min-height:18px; }
-.summary.empty { font-style:italic; opacity:.6; }
-.stack { display:flex; flex-wrap:wrap; gap:4px; }
-.tag { font-size:10.5px; padding:2px 7px; border-radius:5px; background:rgba(88,166,255,.1); color:var(--accent); font-family:var(--font-mono); }
-.lang { font-size:10.5px; color:var(--text-dim); font-family:var(--font-mono); }
+/* ── Sections + grid ── */
+.section { font-size:12px; font-weight:800; color:var(--text-dim); margin:26px 0 13px;
+  text-transform:uppercase; letter-spacing:1.2px; display:flex; align-items:center; gap:9px; }
+.section .n { color:var(--text-faint); font-family:var(--mono); font-weight:500; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:15px; }
 
-.badges { display:flex; flex-wrap:wrap; gap:5px; }
-.badge { font-size:10.5px; padding:2px 7px; border-radius:5px; font-weight:600; display:flex; align-items:center; gap:3px; }
-.badge.on { background:rgba(57,211,83,.13); color:var(--green); }
-.badge.off { background:rgba(229,91,91,.10); color:#7a5050; }
+/* ── Card ── */
+.card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:16px 17px 14px; display:flex; flex-direction:column; gap:10px; box-shadow:var(--shadow);
+  overflow:hidden; transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  animation:cardIn .45s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes cardIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent-c,var(--text-faint)); opacity:.85; }
+.card:hover { transform:translateY(-3px); box-shadow:var(--shadow-h); border-color:var(--border-2); }
+.card[data-cat="product"] { --accent-c:var(--green); }
+.card[data-cat="infra"] { --accent-c:var(--blue); }
+.card[data-cat="practice"] { --accent-c:var(--amber); }
+.card[data-cat="uncategorized"] { --accent-c:var(--text-faint); }
 
-.rbadge { font-size:10.5px; padding:2px 8px; border-radius:5px; font-weight:600; align-self:flex-start; }
-.rbadge.none { background:rgba(255,255,255,.05); color:var(--text-dim); }
-.rbadge.local { background:rgba(212,160,23,.13); color:var(--yellow); }
-.rbadge.clone { background:rgba(167,139,250,.14); color:#a78bfa; }
-.rbadge.own { background:rgba(57,211,83,.13); color:var(--green); }
+.c-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.c-name { font-weight:700; font-size:15px; font-family:var(--mono); word-break:break-all; letter-spacing:-.3px; }
+.type { font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap;
+  background:var(--surface-2); color:var(--text-dim); text-transform:uppercase; letter-spacing:.6px; }
+.summary { font-size:12.5px; color:var(--text-dim); line-height:1.55; min-height:18px; }
+.summary.empty { color:var(--text-faint); font-style:italic; }
+.row { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+.tag { font-size:10.5px; padding:2px 8px; border-radius:6px; background:var(--blue-soft); color:var(--blue); font-family:var(--mono); font-weight:500; }
+.lang { font-size:10.5px; color:var(--text-faint); font-family:var(--mono); }
 
-.card__bottom { display:flex; align-items:center; justify-content:space-between; gap:8px;
-  border-top:1px solid var(--border); padding-top:9px; margin-top:2px; }
-.cat { font-size:12px; background:var(--bg); border:1px solid var(--border); color:var(--text);
-  border-radius:6px; padding:4px 6px; font-family:var(--font); cursor:pointer; }
-.meta { font-size:11px; color:var(--text-dim); font-family:var(--font-mono); }
-.dot { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:4px; }
-.dot.product { background:var(--green); } .dot.infra { background:var(--accent); }
-.dot.practice { background:var(--yellow); } .dot.uncategorized { background:var(--text-dim); }
-.section-title { font-size:13px; font-weight:700; color:var(--text-dim); margin:22px 0 10px;
-  text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:7px; }
-.empty-state { text-align:center; color:var(--text-dim); padding:60px 0; }
+.rbadge { font-size:10.5px; padding:3px 9px; border-radius:6px; font-weight:600; }
+.rbadge.none { background:var(--gray-soft); color:var(--text-faint); }
+.rbadge.local { background:var(--amber-soft); color:var(--amber); }
+.rbadge.clone { background:var(--violet-soft); color:var(--violet); }
+.rbadge.own { background:var(--green-soft); color:var(--green); }
+
+.dots { display:flex; flex-wrap:wrap; gap:4px; }
+.d { font-size:10px; padding:2px 7px; border-radius:5px; font-weight:600; letter-spacing:.2px; }
+.d.on { background:var(--green-soft); color:var(--green); }
+.d.off { background:var(--gray-soft); color:var(--text-faint); text-decoration:line-through; opacity:.7; }
+
+.c-foot { display:flex; align-items:center; justify-content:space-between; gap:8px;
+  border-top:1px solid var(--border); padding-top:11px; margin-top:3px; }
+.cat-sel { font-size:12px; background:var(--surface-2); border:1px solid var(--border); color:var(--text);
+  border-radius:7px; padding:5px 7px; font-family:var(--font); cursor:pointer; transition:.15s; }
+.cat-sel:hover { border-color:var(--border-2); }
+.meta { font-size:11px; color:var(--text-faint); font-family:var(--mono); display:flex; align-items:center; gap:7px; }
+
+.empty-state { text-align:center; color:var(--text-faint); padding:70px 0; font-size:14px; }
+.loading { text-align:center; color:var(--text-dim); padding:80px 0; font-size:14px; }
 </style>
 </head>
 <body>
 <nav class="nav">
   <span class="nav__brand">SoloHQ</span>
-  <a href="/">總覽</a>
-  <a href="/do">執行</a>
-  <a href="/matrix">矩陣</a>
-  <a href="/revenue">營收</a>
-  <a href="/brands">品牌</a>
-  <a href="/projects" class="active">專案</a>
+  <a href="/">Dashboard</a>
+  <a href="/do">Tasks</a>
+  <a href="/matrix">Matrix</a>
+  <a href="/revenue">Revenue</a>
+  <a href="/brands">Brands</a>
+  <a href="/projects" class="active">Projects</a>
+  <span class="nav__spacer"></span>
+  <button class="icon-btn" id="theme" title="切換淺色 / 深色">🌙</button>
 </nav>
 
 <div class="container">
-  <div class="toolbar">
-    <h1>專案牆</h1>
-    <span class="muted" id="count">載入中…</span>
-    <span style="flex:1"></span>
-    <input class="search" id="search" placeholder="搜尋名稱 / 簡介 / 技術棧…">
-    <button class="btn" id="rescan">重新掃描</button>
+  <div class="head">
+    <div>
+      <h1>專案牆</h1>
+      <div class="sub">把所有專案攤開來看清楚 · <code id="codedir">…</code></div>
+    </div>
+    <div class="tools">
+      <input class="search" id="search" placeholder="搜尋名稱 / 簡介 / 技術棧…">
+      <button class="btn" id="rescan">↻ 重新掃描</button>
+    </div>
   </div>
 
-  <div class="chips" id="catChips"></div>
-  <div class="chips" id="repoChips"></div>
-  <div class="chips" id="typeChips"></div>
+  <div class="stats" id="stats"></div>
 
-  <div id="wall"></div>
+  <div class="chiprow" id="catChips"><span class="k">性質</span></div>
+  <div class="chiprow" id="repoChips"><span class="k">Repo</span></div>
+  <div class="chiprow" id="typeChips"><span class="k">類型</span></div>
+
+  <div id="wall"><div class="loading">載入中…</div></div>
 </div>
 
 <script>
+/* ── theme (default light, persisted) ── */
+const THEME_KEY = 'solohq-projects-theme';
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  document.getElementById('theme').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+applyTheme(localStorage.getItem(THEME_KEY) || 'light');
+document.getElementById('theme').onclick = () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next); applyTheme(next);
+};
+
+/* ── data + config ── */
 const CATS = [
   { id:'product', label:'產品 (賣錢)' },
   { id:'infra', label:'基礎設施' },
@@ -117,150 +191,137 @@ const CATS = [
   { id:'uncategorized', label:'未分類' },
 ];
 const COMPLETENESS = [
-  { key:'readme', label:'README' },
-  { key:'logo', label:'LOGO' },
-  { key:'deploy', label:'部署' },
-  { key:'git', label:'GitHub' },
-  { key:'license', label:'授權' },
-  { key:'favicon', label:'favicon' },
-  { key:'tests', label:'測試' },
+  { key:'readme', label:'README' }, { key:'logo', label:'LOGO' }, { key:'deploy', label:'部署' },
+  { key:'git', label:'GitHub' }, { key:'license', label:'授權' }, { key:'favicon', label:'favicon' }, { key:'tests', label:'測試' },
 ];
-
 const REPO_FILTERS = [
   { id:'all', label:'全部', test:() => true },
-  { id:'own', label:'● 自己的 repo', test:(p) => p.repo && p.repo.status==='remote' && !p.repo.isClone },
+  { id:'own', label:'● 自己的', test:(p) => p.repo && p.repo.status==='remote' && !p.repo.isClone },
   { id:'clone', label:'⑂ clone 別人的', test:(p) => p.repo && p.repo.isClone },
   { id:'local', label:'本機未推', test:(p) => p.repo && p.repo.status==='local' },
   { id:'nogit', label:'沒有 git', test:(p) => !p.repo || p.repo.status==='none' },
 ];
 
-let ALL = [];
-let filterCat = 'all';
-let filterType = 'all';
-let filterRepo = 'all';
-let query = '';
+let ALL = [], filterCat='all', filterType='all', filterRepo='all', query='';
+
+function relTime(iso) {
+  if (!iso) return '—';
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return '今天'; if (days === 1) return '昨天';
+  if (days < 30) return days + '天前';
+  if (days < 365) return Math.floor(days/30) + '個月前';
+  return Math.floor(days/365) + '年前';
+}
+function catLabel(id) { const c = CATS.find((x) => x.id === id); return c ? c.label : id; }
+function counts(list, field, val) { return list.filter((p) => p[field] === val).length; }
 
 function repoBadge(p) {
   const r = p.repo || { status:'none' };
   if (r.status === 'none') return '<span class="rbadge none">無 git</span>';
   if (r.status === 'local') return '<span class="rbadge local">本機未推</span>';
-  if (r.isClone) return `<span class="rbadge clone">⑂ clone${r.owner ? ' · ' + r.owner : ''}</span>`;
+  if (r.isClone) return `<span class="rbadge clone">⑂ clone · ${r.owner || '?'}</span>`;
   const vis = r.visibility === 'private' ? ' · 🔒私人' : r.visibility === 'public' ? ' · 🌐公開' : '';
   return `<span class="rbadge own">● 自己的${vis}</span>`;
 }
 
-function relTime(iso) {
-  if (!iso) return '—';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (days <= 0) return '今天';
-  if (days === 1) return '昨天';
-  if (days < 30) return days + ' 天前';
-  if (days < 365) return Math.floor(days / 30) + ' 個月前';
-  return Math.floor(days / 365) + ' 年前';
-}
-
-function catLabel(id) { const c = CATS.find((x) => x.id === id); return c ? c.label : id; }
-
-async function load(scan) {
-  const url = scan === 'full' ? '/api/projects/scan' : (scan === 'inc' ? '/api/projects?scan=1' : '/api/projects');
-  const res = await fetch(url, { method: scan === 'full' ? 'POST' : 'GET' });
+async function load(full) {
+  const res = await fetch(full ? '/api/projects/scan' : '/api/projects', { method: full ? 'POST' : 'GET' });
   const data = await res.json();
   ALL = (data.projects || []).filter((p) => !p.hidden);
+  document.getElementById('codedir').textContent = data.codeDir || '';
   render();
 }
 
-function counts(list, field, val) { return list.filter((p) => p[field] === val).length; }
+function renderStats() {
+  const own = ALL.filter((p)=>p.repo&&p.repo.status==='remote'&&!p.repo.isClone).length;
+  const clone = ALL.filter((p)=>p.repo&&p.repo.isClone).length;
+  const tiles = [
+    { num: ALL.length, lbl:'總專案', a:'' },
+    { num: counts(ALL,'category','product'), lbl:'產品 (賣錢)', a:'accent-green' },
+    { num: own, lbl:'自己的 repo', a:'accent-blue' },
+    { num: clone, lbl:'clone 別人的', a:'accent-violet' },
+    { num: counts(ALL,'category','uncategorized'), lbl:'待分類', a:'accent-amber' },
+  ];
+  document.getElementById('stats').innerHTML = tiles.map((t) =>
+    `<div class="tile ${t.a}"><div class="num">${t.num}</div><div class="lbl">${t.lbl}</div></div>`).join('');
+}
+
+function chipRow(elId, prefixHtml, items, activeId, onPick) {
+  const el = document.getElementById(elId);
+  el.innerHTML = prefixHtml + items.map((it) =>
+    `<span class="chip ${activeId===it.id?'active':''}" data-id="${it.id}">${it.label}${it.n!=null?`<span class="n">${it.n}</span>`:''}</span>`).join('');
+  el.querySelectorAll('.chip').forEach((c) => c.onclick = () => onPick(c.dataset.id));
+}
 
 function renderChips() {
-  const catEl = document.getElementById('catChips');
-  let html = `<span class="chip ${filterCat==='all'?'active':''}" data-cat="all">全部<span class="n">${ALL.length}</span></span>`;
-  for (const c of CATS) {
-    html += `<span class="chip ${filterCat===c.id?'active':''}" data-cat="${c.id}">${c.label}<span class="n">${counts(ALL,'category',c.id)}</span></span>`;
-  }
-  catEl.innerHTML = html;
-  catEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterCat = el.dataset.cat; render(); });
-
-  const types = [...new Set(ALL.map((p) => p.type))].sort();
-  const typeEl = document.getElementById('typeChips');
-  let th = `<span class="chip ${filterType==='all'?'active':''}" data-type="all">所有類型</span>`;
-  for (const t of types) th += `<span class="chip ${filterType===t?'active':''}" data-type="${t}">${t}<span class="n">${counts(ALL,'type',t)}</span></span>`;
-  typeEl.innerHTML = th;
-  typeEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterType = el.dataset.type; render(); });
-
-  const repoEl = document.getElementById('repoChips');
-  repoEl.innerHTML = REPO_FILTERS.map((f) => {
-    const n = f.id === 'all' ? ALL.length : ALL.filter(f.test).length;
-    return `<span class="chip ${filterRepo===f.id?'active':''}" data-repo="${f.id}">${f.label}<span class="n">${n}</span></span>`;
-  }).join('');
-  repoEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterRepo = el.dataset.repo; render(); });
+  chipRow('catChips', '<span class="k">性質</span>',
+    [{ id:'all', label:'全部', n:ALL.length }, ...CATS.map((c)=>({ id:c.id, label:c.label, n:counts(ALL,'category',c.id) }))],
+    filterCat, (id) => { filterCat = id; render(); });
+  chipRow('repoChips', '<span class="k">Repo</span>',
+    REPO_FILTERS.map((f)=>({ id:f.id, label:f.label, n:f.id==='all'?ALL.length:ALL.filter(f.test).length })),
+    filterRepo, (id) => { filterRepo = id; render(); });
+  const types = [...new Set(ALL.map((p)=>p.type))].sort();
+  chipRow('typeChips', '<span class="k">類型</span>',
+    [{ id:'all', label:'全部', n:ALL.length }, ...types.map((t)=>({ id:t, label:t, n:counts(ALL,'type',t) }))],
+    filterType, (id) => { filterType = id; render(); });
 }
 
 function matches(p) {
   if (filterCat !== 'all' && p.category !== filterCat) return false;
   if (filterType !== 'all' && p.type !== filterType) return false;
-  if (filterRepo !== 'all') {
-    const f = REPO_FILTERS.find((x) => x.id === filterRepo);
-    if (f && !f.test(p)) return false;
-  }
+  if (filterRepo !== 'all') { const f = REPO_FILTERS.find((x)=>x.id===filterRepo); if (f && !f.test(p)) return false; }
   if (query) {
-    const hay = (p.name + ' ' + (p.summary || '') + ' ' + (p.stack || []).join(' ')).toLowerCase();
+    const hay = (p.name + ' ' + (p.summary||'') + ' ' + (p.stack||[]).join(' ')).toLowerCase();
     if (!hay.includes(query)) return false;
   }
   return true;
 }
 
-function cardHtml(p) {
-  const badges = COMPLETENESS.map((c) =>
-    `<span class="badge ${p.completeness && p.completeness[c.key] ? 'on' : 'off'}">${p.completeness && p.completeness[c.key] ? '✓' : '✕'} ${c.label}</span>`
-  ).join('');
-  const stack = (p.stack || []).map((s) => `<span class="tag">${s}</span>`).join('');
-  const opts = CATS.map((c) => `<option value="${c.id}" ${p.category===c.id?'selected':''}>${c.label}</option>`).join('');
-  const remote = p.gitRemote ? `<a href="${p.gitRemote.replace(/\.git$/, '').replace(/^git@github\.com:/, 'https://github.com/')}" target="_blank">repo ↗</a>` : '';
-  return `<div class="card">
-    <div class="card__top">
-      <span class="card__name">${p.name}</span>
-      <span class="type">${p.type}</span>
-    </div>
-    <div class="summary ${p.summary ? '' : 'empty'}">${p.summary || '（沒有簡介 — 缺 README/description）'}</div>
-    <div class="stack">${stack}<span class="lang">${p.language}</span></div>
-    <div>${repoBadge(p)}</div>
-    <div class="badges">${badges}</div>
-    <div class="card__bottom">
-      <select class="cat" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">
-        ${opts}
-      </select>
-      <span class="meta"><span class="dot ${p.category}"></span>${relTime(p.lastModified)} · ${p.score}/7 ${remote}</span>
+function cardHtml(p, i) {
+  const dots = COMPLETENESS.map((c) => {
+    const on = p.completeness && p.completeness[c.key];
+    return `<span class="d ${on?'on':'off'}">${c.label}</span>`;
+  }).join('');
+  const stack = (p.stack||[]).map((s)=>`<span class="tag">${s}</span>`).join('');
+  const opts = CATS.map((c)=>`<option value="${c.id}" ${p.category===c.id?'selected':''}>${c.label}</option>`).join('');
+  const repoUrl = p.gitRemote ? p.gitRemote.replace(/\.git$/,'').replace(/^git@github\.com:/,'https://github.com/') : '';
+  const link = repoUrl ? `<a href="${repoUrl}" target="_blank" rel="noreferrer">repo&nbsp;↗</a>` : '';
+  return `<div class="card" data-cat="${p.category}" style="--i:${i}">
+    <div class="c-top"><span class="c-name">${p.name}</span><span class="type">${p.type}</span></div>
+    <div class="summary ${p.summary?'':'empty'}">${p.summary || '（沒有簡介 — 缺 README / description）'}</div>
+    <div class="row">${stack}<span class="lang">${p.language}</span></div>
+    <div class="row">${repoBadge(p)}</div>
+    <div class="dots">${dots}</div>
+    <div class="c-foot">
+      <select class="cat-sel" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">${opts}</select>
+      <span class="meta">${relTime(p.lastModified)} · ${p.score}/7 ${link}</span>
     </div>
   </div>`;
 }
 
 function render() {
+  renderStats();
   renderChips();
   const list = ALL.filter(matches);
-  document.getElementById('count').textContent = `${list.length} / ${ALL.length} 個專案`;
   const wall = document.getElementById('wall');
-  if (list.length === 0) { wall.innerHTML = '<div class="empty-state">沒有符合的專案</div>'; return; }
-
-  // Group by category for a "laid out" overview
-  let html = '';
-  const order = ['product', 'infra', 'practice', 'uncategorized'];
+  if (list.length === 0) { wall.innerHTML = '<div class="empty-state">沒有符合的專案 🔍</div>'; return; }
+  const order = ['product','infra','practice','uncategorized'];
   const groups = filterCat === 'all' ? order : [filterCat];
+  let html = '', i = 0;
   for (const g of groups) {
-    const items = list.filter((p) => p.category === g);
-    if (items.length === 0) continue;
-    html += `<div class="section-title"><span class="dot ${g}"></span>${catLabel(g)} <span class="n" style="color:var(--text-dim)">${items.length}</span></div>`;
-    html += `<div class="grid">${items.map(cardHtml).join('')}</div>`;
+    const items = list.filter((p)=>p.category===g);
+    if (!items.length) continue;
+    html += `<div class="section">${catLabel(g)} <span class="n">${items.length}</span></div>`;
+    html += `<div class="grid">${items.map((p)=>cardHtml(p, i++)).join('')}</div>`;
   }
   wall.innerHTML = html;
-
-  wall.querySelectorAll('.cat').forEach((sel) => {
+  wall.querySelectorAll('.cat-sel').forEach((sel) => {
     sel.onchange = async () => {
       const id = sel.dataset.id;
       await fetch('/api/projects/' + encodeURIComponent(id), {
-        method: 'PUT', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ category: sel.value }),
+        method:'PUT', headers:{ 'content-type':'application/json' }, body:JSON.stringify({ category: sel.value }),
       });
-      const p = ALL.find((x) => x.id === id);
+      const p = ALL.find((x)=>x.id===id);
       if (p) { p.category = sel.value; p.categorySource = 'manual'; }
       render();
     };
@@ -269,9 +330,8 @@ function render() {
 
 document.getElementById('search').addEventListener('input', (e) => { query = e.target.value.trim().toLowerCase(); render(); });
 document.getElementById('rescan').addEventListener('click', async () => {
-  const btn = document.getElementById('rescan');
-  btn.disabled = true; btn.textContent = '掃描中…';
-  try { await load('full'); } finally { btn.disabled = false; btn.textContent = '重新掃描'; }
+  const b = document.getElementById('rescan'); b.disabled = true; b.textContent = '掃描中…';
+  try { await load(true); } finally { b.disabled = false; b.textContent = '↻ 重新掃描'; }
 });
 
 load();
