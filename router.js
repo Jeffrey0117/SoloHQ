@@ -77,6 +77,12 @@ const routes = [
   // Goals
   { method: 'GET', path: '/api/goals', handler: 'api:goals:list' },
   { method: 'PUT', path: '/api/goals/:id', handler: 'api:goals:update' },
+
+  // Projects wall
+  { method: 'GET', path: '/projects', handler: 'page:projects' },
+  { method: 'GET', path: '/api/projects', handler: 'api:projects:list' },
+  { method: 'POST', path: '/api/projects/scan', handler: 'api:projects:scan' },
+  { method: 'PUT', path: '/api/projects/:id', handler: 'api:projects:update' },
 ]
 
 module.exports = { matchRoute, routes }

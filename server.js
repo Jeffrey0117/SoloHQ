@@ -7,6 +7,7 @@ const crypto = require('crypto')
 const db = require('../../sdk/database')
 const { matchRoute, routes } = require('./router')
 const { generateTasks, todayStr } = require('./engine')
+const projects = require('./projects')
 
 const PORT = parseInt(process.env.PORT || '4028', 10)
 const TOKEN = process.env.SOLOHQ_TOKEN || ''
@@ -102,9 +103,32 @@ handlers['page:do'] = (req, res) => servePage(res, 'do.html')
 handlers['page:matrix'] = (req, res) => servePage(res, 'matrix.html')
 handlers['page:revenue'] = (req, res) => servePage(res, 'revenue.html')
 handlers['page:brands'] = (req, res) => servePage(res, 'brands.html')
+handlers['page:projects'] = (req, res) => servePage(res, 'projects.html')
 
 // Health
 handlers['api:health'] = (req, res) => json(res, 200, { ok: true })
+
+// ── Projects wall ────────────────────────────────────────
+
+handlers['api:projects:list'] = (req, res) => {
+  const url = new URL(req.url, 'http://x')
+  const cards = url.searchParams.get('scan') === '1'
+    ? projects.scan({ force: false })   // incremental: only changed projects rebuild
+    : projects.getCards()               // instant: straight from cache
+  json(res, 200, { projects: cards, codeDir: projects.CODE_DIR })
+}
+
+handlers['api:projects:scan'] = (req, res) => {
+  const cards = projects.scan({ force: true })
+  json(res, 200, { projects: cards, codeDir: projects.CODE_DIR })
+}
+
+handlers['api:projects:update'] = async (req, res, params) => {
+  const body = await readBody(req)
+  const card = projects.setOverride(params.id, body || {})
+  if (!card) return json(res, 404, { error: 'project not found' })
+  json(res, 200, { project: card })
+}
 
 // ── Brands ───────────────────────────────────────────────
 

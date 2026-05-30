@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SoloHQ · 專案牆</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+TC:wght@400;600;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c10; --surface:#12151c; --border:#1e232e; --text:#d1d5e0; --text-dim:#545d6e;
+  --green:#39d353; --yellow:#d4a017; --red:#e55b5b; --accent:#58a6ff;
+  --font:'Noto Sans TC',-apple-system,sans-serif; --font-mono:'JetBrains Mono','SF Mono',monospace;
+}
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; }
+a { color:var(--accent); text-decoration:none; }
+
+.nav { display:flex; align-items:center; gap:4px; padding:12px 32px; background:var(--surface);
+  border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+.nav__brand { font-family:var(--font-mono); font-weight:700; font-size:16px; color:var(--green);
+  margin-right:24px; letter-spacing:-0.5px; }
+.nav a { color:var(--text-dim); padding:6px 14px; border-radius:6px; font-size:14px; font-weight:600; transition:all .15s; }
+.nav a:hover { color:var(--text); background:rgba(255,255,255,.04); }
+.nav a.active { color:var(--text); background:rgba(255,255,255,.08); }
+
+.container { max-width:1200px; margin:0 auto; padding:24px 32px; }
+
+.toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:18px; }
+.toolbar h1 { font-size:20px; font-weight:900; margin-right:8px; }
+.muted { color:var(--text-dim); font-size:13px; }
+.search { background:var(--surface); border:1px solid var(--border); color:var(--text);
+  border-radius:8px; padding:7px 12px; font-size:14px; font-family:var(--font); min-width:200px; }
+.btn { background:var(--surface); border:1px solid var(--border); color:var(--text); cursor:pointer;
+  border-radius:8px; padding:7px 14px; font-size:13px; font-weight:600; font-family:var(--font); transition:all .15s; }
+.btn:hover { border-color:var(--accent); }
+.btn[disabled] { opacity:.5; cursor:default; }
+
+.chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+.chip { background:var(--surface); border:1px solid var(--border); color:var(--text-dim); cursor:pointer;
+  border-radius:999px; padding:5px 13px; font-size:12.5px; font-weight:600; transition:all .12s; }
+.chip:hover { color:var(--text); }
+.chip.active { color:#fff; border-color:var(--accent); background:rgba(88,166,255,.15); }
+.chip .n { color:var(--text-dim); font-family:var(--font-mono); margin-left:5px; font-size:11px; }
+.chip.active .n { color:var(--accent); }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:15px;
+  display:flex; flex-direction:column; gap:9px; transition:border-color .15s; }
+.card:hover { border-color:#2c3442; }
+.card__top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.card__name { font-weight:700; font-size:15px; font-family:var(--font-mono); word-break:break-all; }
+.type { font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap;
+  background:rgba(255,255,255,.06); color:var(--text-dim); text-transform:uppercase; letter-spacing:.5px; }
+.summary { font-size:12.5px; color:var(--text-dim); line-height:1.5; min-height:18px; }
+.summary.empty { font-style:italic; opacity:.6; }
+.stack { display:flex; flex-wrap:wrap; gap:4px; }
+.tag { font-size:10.5px; padding:2px 7px; border-radius:5px; background:rgba(88,166,255,.1); color:var(--accent); font-family:var(--font-mono); }
+.lang { font-size:10.5px; color:var(--text-dim); font-family:var(--font-mono); }
+
+.badges { display:flex; flex-wrap:wrap; gap:5px; }
+.badge { font-size:10.5px; padding:2px 7px; border-radius:5px; font-weight:600; display:flex; align-items:center; gap:3px; }
+.badge.on { background:rgba(57,211,83,.13); color:var(--green); }
+.badge.off { background:rgba(229,91,91,.10); color:#7a5050; }
+
+.card__bottom { display:flex; align-items:center; justify-content:space-between; gap:8px;
+  border-top:1px solid var(--border); padding-top:9px; margin-top:2px; }
+.cat { font-size:12px; background:var(--bg); border:1px solid var(--border); color:var(--text);
+  border-radius:6px; padding:4px 6px; font-family:var(--font); cursor:pointer; }
+.meta { font-size:11px; color:var(--text-dim); font-family:var(--font-mono); }
+.dot { width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:4px; }
+.dot.product { background:var(--green); } .dot.infra { background:var(--accent); }
+.dot.practice { background:var(--yellow); } .dot.uncategorized { background:var(--text-dim); }
+.section-title { font-size:13px; font-weight:700; color:var(--text-dim); margin:22px 0 10px;
+  text-transform:uppercase; letter-spacing:1px; display:flex; align-items:center; gap:7px; }
+.empty-state { text-align:center; color:var(--text-dim); padding:60px 0; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav__brand">SoloHQ</span>
+  <a href="/">總覽</a>
+  <a href="/do">執行</a>
+  <a href="/matrix">矩陣</a>
+  <a href="/revenue">營收</a>
+  <a href="/brands">品牌</a>
+  <a href="/projects" class="active">專案</a>
+</nav>
+
+<div class="container">
+  <div class="toolbar">
+    <h1>專案牆</h1>
+    <span class="muted" id="count">載入中…</span>
+    <span style="flex:1"></span>
+    <input class="search" id="search" placeholder="搜尋名稱 / 簡介 / 技術棧…">
+    <button class="btn" id="rescan">重新掃描</button>
+  </div>
+
+  <div class="chips" id="catChips"></div>
+  <div class="chips" id="typeChips"></div>
+
+  <div id="wall"></div>
+</div>
+
+<script>
+const CATS = [
+  { id:'product', label:'產品 (賣錢)' },
+  { id:'infra', label:'基礎設施' },
+  { id:'practice', label:'練習' },
+  { id:'uncategorized', label:'未分類' },
+];
+const COMPLETENESS = [
+  { key:'readme', label:'README' },
+  { key:'logo', label:'LOGO' },
+  { key:'deploy', label:'部署' },
+  { key:'git', label:'GitHub' },
+  { key:'license', label:'授權' },
+  { key:'favicon', label:'favicon' },
+  { key:'tests', label:'測試' },
+];
+
+let ALL = [];
+let filterCat = 'all';
+let filterType = 'all';
+let query = '';
+
+function relTime(iso) {
+  if (!iso) return '—';
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return '今天';
+  if (days === 1) return '昨天';
+  if (days < 30) return days + ' 天前';
+  if (days < 365) return Math.floor(days / 30) + ' 個月前';
+  return Math.floor(days / 365) + ' 年前';
+}
+
+function catLabel(id) { const c = CATS.find((x) => x.id === id); return c ? c.label : id; }
+
+async function load(scan) {
+  const url = scan === 'full' ? '/api/projects/scan' : (scan === 'inc' ? '/api/projects?scan=1' : '/api/projects');
+  const res = await fetch(url, { method: scan === 'full' ? 'POST' : 'GET' });
+  const data = await res.json();
+  ALL = (data.projects || []).filter((p) => !p.hidden);
+  render();
+}
+
+function counts(list, field, val) { return list.filter((p) => p[field] === val).length; }
+
+function renderChips() {
+  const catEl = document.getElementById('catChips');
+  let html = `<span class="chip ${filterCat==='all'?'active':''}" data-cat="all">全部<span class="n">${ALL.length}</span></span>`;
+  for (const c of CATS) {
+    html += `<span class="chip ${filterCat===c.id?'active':''}" data-cat="${c.id}">${c.label}<span class="n">${counts(ALL,'category',c.id)}</span></span>`;
+  }
+  catEl.innerHTML = html;
+  catEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterCat = el.dataset.cat; render(); });
+
+  const types = [...new Set(ALL.map((p) => p.type))].sort();
+  const typeEl = document.getElementById('typeChips');
+  let th = `<span class="chip ${filterType==='all'?'active':''}" data-type="all">所有類型</span>`;
+  for (const t of types) th += `<span class="chip ${filterType===t?'active':''}" data-type="${t}">${t}<span class="n">${counts(ALL,'type',t)}</span></span>`;
+  typeEl.innerHTML = th;
+  typeEl.querySelectorAll('.chip').forEach((el) => el.onclick = () => { filterType = el.dataset.type; render(); });
+}
+
+function matches(p) {
+  if (filterCat !== 'all' && p.category !== filterCat) return false;
+  if (filterType !== 'all' && p.type !== filterType) return false;
+  if (query) {
+    const hay = (p.name + ' ' + (p.summary || '') + ' ' + (p.stack || []).join(' ')).toLowerCase();
+    if (!hay.includes(query)) return false;
+  }
+  return true;
+}
+
+function cardHtml(p) {
+  const badges = COMPLETENESS.map((c) =>
+    `<span class="badge ${p.completeness && p.completeness[c.key] ? 'on' : 'off'}">${p.completeness && p.completeness[c.key] ? '✓' : '✕'} ${c.label}</span>`
+  ).join('');
+  const stack = (p.stack || []).map((s) => `<span class="tag">${s}</span>`).join('');
+  const opts = CATS.map((c) => `<option value="${c.id}" ${p.category===c.id?'selected':''}>${c.label}</option>`).join('');
+  const remote = p.gitRemote ? `<a href="${p.gitRemote.replace(/\.git$/, '').replace(/^git@github\.com:/, 'https://github.com/')}" target="_blank">repo ↗</a>` : '';
+  return `<div class="card">
+    <div class="card__top">
+      <span class="card__name">${p.name}</span>
+      <span class="type">${p.type}</span>
+    </div>
+    <div class="summary ${p.summary ? '' : 'empty'}">${p.summary || '（沒有簡介 — 缺 README/description）'}</div>
+    <div class="stack">${stack}<span class="lang">${p.language}</span></div>
+    <div class="badges">${badges}</div>
+    <div class="card__bottom">
+      <select class="cat" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">
+        ${opts}
+      </select>
+      <span class="meta"><span class="dot ${p.category}"></span>${relTime(p.lastModified)} · ${p.score}/7 ${remote}</span>
+    </div>
+  </div>`;
+}
+
+function render() {
+  renderChips();
+  const list = ALL.filter(matches);
+  document.getElementById('count').textContent = `${list.length} / ${ALL.length} 個專案`;
+  const wall = document.getElementById('wall');
+  if (list.length === 0) { wall.innerHTML = '<div class="empty-state">沒有符合的專案</div>'; return; }
+
+  // Group by category for a "laid out" overview
+  let html = '';
+  const order = ['product', 'infra', 'practice', 'uncategorized'];
+  const groups = filterCat === 'all' ? order : [filterCat];
+  for (const g of groups) {
+    const items = list.filter((p) => p.category === g);
+    if (items.length === 0) continue;
+    html += `<div class="section-title"><span class="dot ${g}"></span>${catLabel(g)} <span class="n" style="color:var(--text-dim)">${items.length}</span></div>`;
+    html += `<div class="grid">${items.map(cardHtml).join('')}</div>`;
+  }
+  wall.innerHTML = html;
+
+  wall.querySelectorAll('.cat').forEach((sel) => {
+    sel.onchange = async () => {
+      const id = sel.dataset.id;
+      await fetch('/api/projects/' + encodeURIComponent(id), {
+        method: 'PUT', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ category: sel.value }),
+      });
+      const p = ALL.find((x) => x.id === id);
+      if (p) { p.category = sel.value; p.categorySource = 'manual'; }
+      render();
+    };
+  });
+}
+
+document.getElementById('search').addEventListener('input', (e) => { query = e.target.value.trim().toLowerCase(); render(); });
+document.getElementById('rescan').addEventListener('click', async () => {
+  const btn = document.getElementById('rescan');
+  btn.disabled = true; btn.textContent = '掃描中…';
+  try { await load('full'); } finally { btn.disabled = false; btn.textContent = '重新掃描'; }
+});
+
+load();
+</script>
+</body>
+</html>

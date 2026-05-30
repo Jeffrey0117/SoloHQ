@@ -4,3 +4,7 @@ data/
 .pkg-hash
 .pm2-ecosystem.json
 .claude/
+
+# Project wall runtime cache
+projects-cache.json
+projects-overrides.json
