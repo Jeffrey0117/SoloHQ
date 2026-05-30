@@ -8,3 +8,6 @@ data/
 # Project wall runtime cache
 projects-cache.json
 projects-overrides.json
+
+# AI intro cache
+projects-summaries.json

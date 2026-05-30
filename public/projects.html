@@ -132,6 +132,31 @@ a { color:var(--blue); text-decoration:none; }
 .cat-sel:hover { border-color:var(--border-2); }
 .meta { font-size:11px; color:var(--text-faint); font-family:var(--mono); display:flex; align-items:center; gap:7px; }
 
+/* ── List / reading view ── */
+.list { border:1px solid var(--border); border-radius:13px; overflow:hidden; box-shadow:var(--shadow); }
+.lrow { display:grid; grid-template-columns:210px 1fr auto; gap:16px; align-items:center;
+  padding:13px 17px; background:var(--surface); border-left:3px solid var(--accent-c,var(--text-faint));
+  transition:background .12s; }
+.lrow + .lrow { border-top:1px solid var(--border); }
+.lrow:hover { background:var(--surface-2); }
+.lrow[data-cat="product"] { --accent-c:var(--green); }
+.lrow[data-cat="infra"] { --accent-c:var(--blue); }
+.lrow[data-cat="practice"] { --accent-c:var(--amber); }
+.lrow[data-cat="uncategorized"] { --accent-c:var(--text-faint); }
+.lname { font-family:var(--mono); font-weight:700; font-size:13.5px; word-break:break-all; }
+.lname .lt { display:block; font-size:9.5px; color:var(--text-faint); font-weight:500; margin-top:3px; text-transform:uppercase; letter-spacing:.5px; }
+.lsum { font-size:13px; color:var(--text-dim); line-height:1.5; }
+.lsum.empty { color:var(--text-faint); }
+.lmeta { display:flex; align-items:center; gap:9px; font-size:11px; color:var(--text-faint); font-family:var(--mono); white-space:nowrap; }
+
+/* ── AI intro generation ── */
+.gen-btn { font-size:11px; padding:3px 10px; border-radius:6px; border:1px dashed var(--border-2);
+  background:transparent; color:var(--text-dim); cursor:pointer; font-family:var(--font); transition:.15s; }
+.gen-btn:hover { border-color:var(--green); color:var(--green); }
+.gen-btn[disabled] { opacity:.55; cursor:default; }
+.ai-tag { font-size:9px; padding:1px 5px; border-radius:4px; background:var(--violet-soft);
+  color:var(--violet); font-weight:700; margin-left:6px; vertical-align:middle; font-family:var(--mono); }
+
 .empty-state { text-align:center; color:var(--text-faint); padding:70px 0; font-size:14px; }
 .loading { text-align:center; color:var(--text-dim); padding:80px 0; font-size:14px; }
 </style>
@@ -157,6 +182,8 @@ a { color:var(--blue); text-decoration:none; }
     </div>
     <div class="tools">
       <input class="search" id="search" placeholder="搜尋名稱 / 簡介 / 技術棧…">
+      <button class="btn" id="viewToggle" title="切換 卡片 / 清單">☰ 清單</button>
+      <button class="btn" id="genAll" title="幫所有沒介紹的專案用 AI 生成一句介紹">✨ 補介紹</button>
       <button class="btn" id="rescan">↻ 重新掃描</button>
     </div>
   </div>
@@ -203,6 +230,8 @@ const REPO_FILTERS = [
 ];
 
 let ALL = [], filterCat='all', filterType='all', filterRepo='all', query='';
+let view = localStorage.getItem('solohq-projects-view') || 'grid';
+let batching = false;
 
 function relTime(iso) {
   if (!iso) return '—';
@@ -222,6 +251,40 @@ function repoBadge(p) {
   if (r.isClone) return `<span class="rbadge clone">⑂ clone · ${r.owner || '?'}</span>`;
   const vis = r.visibility === 'private' ? ' · 🔒私人' : r.visibility === 'public' ? ' · 🌐公開' : '';
   return `<span class="rbadge own">● 自己的${vis}</span>`;
+}
+
+function summaryHtml(p) {
+  if (p.summary) return `${p.summary}${p.summarySource === 'ai' ? '<span class="ai-tag">AI</span>' : ''}`;
+  return `<button class="gen-btn" data-gen="${p.id}">✨ 生成介紹</button>`;
+}
+
+function repoLink(p) {
+  if (!p.gitRemote) return '';
+  const u = p.gitRemote.replace(/\.git$/,'').replace(/^git@github\.com:/,'https://github.com/');
+  return `<a href="${u}" target="_blank" rel="noreferrer">repo&nbsp;↗</a>`;
+}
+
+async function genOne(id, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '生成中…'; }
+  try {
+    const res = await fetch('/api/projects/' + encodeURIComponent(id) + '/intro', { method:'POST' });
+    const data = await res.json();
+    if (data.project && data.project.summary) {
+      const p = ALL.find((x) => x.id === id);
+      if (p) { p.summary = data.project.summary; p.summarySource = data.project.summarySource || 'ai'; }
+      return true;
+    }
+  } catch { /* fall through */ }
+  if (btn) { btn.textContent = '失敗,重試'; btn.disabled = false; }
+  return false;
+}
+
+function rowHtml(p) {
+  return `<div class="lrow" data-cat="${p.category}">
+    <div class="lname">${p.name}<span class="lt">${p.type} · ${p.category}</span></div>
+    <div class="lsum ${p.summary?'':'empty'}">${summaryHtml(p)}</div>
+    <div class="lmeta">${repoBadge(p)} · ${relTime(p.lastModified)} · ${p.score}/7 ${repoLink(p)}</div>
+  </div>`;
 }
 
 async function load(full) {
@@ -284,17 +347,15 @@ function cardHtml(p, i) {
   }).join('');
   const stack = (p.stack||[]).map((s)=>`<span class="tag">${s}</span>`).join('');
   const opts = CATS.map((c)=>`<option value="${c.id}" ${p.category===c.id?'selected':''}>${c.label}</option>`).join('');
-  const repoUrl = p.gitRemote ? p.gitRemote.replace(/\.git$/,'').replace(/^git@github\.com:/,'https://github.com/') : '';
-  const link = repoUrl ? `<a href="${repoUrl}" target="_blank" rel="noreferrer">repo&nbsp;↗</a>` : '';
   return `<div class="card" data-cat="${p.category}" style="--i:${i}">
     <div class="c-top"><span class="c-name">${p.name}</span><span class="type">${p.type}</span></div>
-    <div class="summary ${p.summary?'':'empty'}">${p.summary || '（沒有簡介 — 缺 README / description）'}</div>
+    <div class="summary ${p.summary?'':'empty'}">${summaryHtml(p)}</div>
     <div class="row">${stack}<span class="lang">${p.language}</span></div>
     <div class="row">${repoBadge(p)}</div>
     <div class="dots">${dots}</div>
     <div class="c-foot">
       <select class="cat-sel" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">${opts}</select>
-      <span class="meta">${relTime(p.lastModified)} · ${p.score}/7 ${link}</span>
+      <span class="meta">${relTime(p.lastModified)} · ${p.score}/7 ${repoLink(p)}</span>
     </div>
   </div>`;
 }
@@ -312,7 +373,9 @@ function render() {
     const items = list.filter((p)=>p.category===g);
     if (!items.length) continue;
     html += `<div class="section">${catLabel(g)} <span class="n">${items.length}</span></div>`;
-    html += `<div class="grid">${items.map((p)=>cardHtml(p, i++)).join('')}</div>`;
+    html += view === 'list'
+      ? `<div class="list">${items.map(rowHtml).join('')}</div>`
+      : `<div class="grid">${items.map((p)=>cardHtml(p, i++)).join('')}</div>`;
   }
   wall.innerHTML = html;
   wall.querySelectorAll('.cat-sel').forEach((sel) => {
@@ -326,12 +389,41 @@ function render() {
       render();
     };
   });
+  wall.querySelectorAll('.gen-btn').forEach((b) => {
+    b.onclick = async () => { if (await genOne(b.dataset.gen, b)) render(); };
+  });
 }
 
 document.getElementById('search').addEventListener('input', (e) => { query = e.target.value.trim().toLowerCase(); render(); });
 document.getElementById('rescan').addEventListener('click', async () => {
   const b = document.getElementById('rescan'); b.disabled = true; b.textContent = '掃描中…';
   try { await load(true); } finally { b.disabled = false; b.textContent = '↻ 重新掃描'; }
+});
+
+const vt = document.getElementById('viewToggle');
+function syncViewBtn() { vt.textContent = view === 'grid' ? '☰ 清單' : '▦ 卡片'; }
+syncViewBtn();
+vt.addEventListener('click', () => {
+  view = view === 'grid' ? 'list' : 'grid';
+  localStorage.setItem('solohq-projects-view', view);
+  syncViewBtn(); render();
+});
+
+const genAllBtn = document.getElementById('genAll');
+genAllBtn.addEventListener('click', async () => {
+  if (batching) { batching = false; return; }          // click again to stop
+  const missing = ALL.filter((p) => !p.summary);
+  if (!missing.length) { genAllBtn.textContent = '✅ 都有介紹了'; setTimeout(() => genAllBtn.textContent = '✨ 補介紹', 1500); return; }
+  batching = true;
+  let done = 0;
+  for (const p of missing) {
+    if (!batching) break;
+    genAllBtn.textContent = `⏳ ${done}/${missing.length}（停止）`;
+    await genOne(p.id, null);
+    done++; render();
+  }
+  batching = false;
+  genAllBtn.textContent = '✨ 補介紹';
 });
 
 load();

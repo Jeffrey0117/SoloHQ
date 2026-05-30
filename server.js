@@ -130,6 +130,16 @@ handlers['api:projects:update'] = async (req, res, params) => {
   json(res, 200, { project: card })
 }
 
+handlers['api:projects:intro'] = async (req, res, params) => {
+  try {
+    const card = await projects.generateIntroFor(params.id)
+    if (!card) return json(res, 404, { error: 'project not found' })
+    json(res, 200, { project: card })
+  } catch (err) {
+    json(res, 500, { error: err instanceof Error ? err.message : 'intro generation failed' })
+  }
+}
+
 // ── Brands ───────────────────────────────────────────────
 
 handlers['api:brands:list'] = async (req, res) => {

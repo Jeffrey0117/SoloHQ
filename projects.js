@@ -15,6 +15,7 @@ const path = require('path')
 const CODE_DIR = process.env.SOLOHQ_CODE_DIR || path.resolve(__dirname, '../../')
 const CACHE_FILE = path.join(__dirname, 'projects-cache.json')
 const OVERRIDES_FILE = path.join(__dirname, 'projects-overrides.json')
+const SUMMARIES_FILE = path.join(__dirname, 'projects-summaries.json')
 
 const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.cache', 'coverage'])
 // A directory counts as a "project" if it has at least one of these markers.
@@ -245,6 +246,7 @@ function buildCard(dir) {
   }
   card.category = guessCategory(card)
   card.categorySource = 'auto'
+  card.summarySource = card.summary ? 'auto' : null
   return card
 }
 
@@ -280,6 +282,25 @@ function applyOverride(card, override) {
   return merged
 }
 
+function loadSummaries() {
+  const s = readJson(SUMMARIES_FILE)
+  return s && typeof s === 'object' ? s : {}
+}
+
+function saveSummaries(s) {
+  try { fs.writeFileSync(SUMMARIES_FILE, JSON.stringify(s, null, 2), 'utf-8') } catch { /* ignore */ }
+}
+
+// Fill in an AI-generated intro only when the project has no README/package summary.
+function applySummary(card, summary) {
+  if (card.summary || !summary || !summary.intro) return card
+  return { ...card, summary: summary.intro, summarySource: 'ai' }
+}
+
+function decorate(card, override, summary) {
+  return applySummary(applyOverride(card, override), summary)
+}
+
 // ── public API ───────────────────────────────────────────
 
 /**
@@ -290,6 +311,7 @@ function scan(opts) {
   const force = Boolean(opts && opts.force)
   const cache = loadCache()
   const overrides = loadOverrides()
+  const summaries = loadSummaries()
   const nextCache = {}
   const cards = []
 
@@ -311,7 +333,7 @@ function scan(opts) {
       card = buildCard(full)
     }
     nextCache[dirent.name] = card
-    cards.push(applyOverride(card, overrides[dirent.name]))
+    cards.push(decorate(card, overrides[dirent.name], summaries[dirent.name]))
   }
 
   saveCache(nextCache)
@@ -324,9 +346,24 @@ function getCards() {
   const cache = loadCache()
   if (!cache || Object.keys(cache).length === 0) return scan({ force: false })
   const overrides = loadOverrides()
+  const summaries = loadSummaries()
   return Object.values(cache)
-    .map((card) => applyOverride(card, overrides[card.id]))
+    .map((card) => decorate(card, overrides[card.id], summaries[card.id]))
     .sort((a, b) => String(b.lastModified || '').localeCompare(String(a.lastModified || '')))
+}
+
+/** Generate (and cache) an AI intro for one project via the local claude CLI. */
+async function generateIntroFor(id) {
+  const cache = loadCache()
+  const card = cache[id]
+  if (!card) return null
+  const { generateIntro } = require('./summarizer')
+  const intro = await generateIntro(card.path)
+  const summaries = loadSummaries()
+  summaries[id] = { intro, source: 'ai', at: new Date().toISOString() }
+  saveSummaries(summaries)
+  const overrides = loadOverrides()
+  return decorate(card, overrides[id], summaries[id])
 }
 
 /** Persist a manual override (category / hidden / note) for one project. */
@@ -344,4 +381,4 @@ function setOverride(id, patch) {
   return card
 }
 
-module.exports = { scan, getCards, setOverride, CODE_DIR }
+module.exports = { scan, getCards, setOverride, generateIntroFor, CODE_DIR }
