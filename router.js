@@ -84,6 +84,7 @@ const routes = [
   { method: 'POST', path: '/api/projects/scan', handler: 'api:projects:scan' },
   { method: 'PUT', path: '/api/projects/:id', handler: 'api:projects:update' },
   { method: 'POST', path: '/api/projects/:id/intro', handler: 'api:projects:intro' },
+  { method: 'POST', path: '/api/projects/:id/open', handler: 'api:projects:open' },
 ]
 
 module.exports = { matchRoute, routes }

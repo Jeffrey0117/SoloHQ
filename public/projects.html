@@ -157,6 +157,13 @@ a { color:var(--blue); text-decoration:none; }
 .ai-tag { font-size:9px; padding:1px 5px; border-radius:4px; background:var(--violet-soft);
   color:var(--violet); font-weight:700; margin-left:6px; vertical-align:middle; font-family:var(--mono); }
 
+/* ── Action buttons ── */
+.acts { display:flex; gap:6px; flex-wrap:wrap; }
+.act { font-size:11px; padding:4px 10px; border-radius:7px; border:1px solid var(--border);
+  background:var(--surface-2); color:var(--text-dim); cursor:pointer; font-family:var(--font); transition:.15s; }
+.act:hover { border-color:var(--accent); color:var(--accent); }
+.act[disabled] { opacity:.6; cursor:default; }
+
 .empty-state { text-align:center; color:var(--text-faint); padding:70px 0; font-size:14px; }
 .loading { text-align:center; color:var(--text-dim); padding:80px 0; font-size:14px; }
 </style>
@@ -360,11 +367,28 @@ function cardHtml(p, i) {
     <div class="row">${stack}<span class="lang">${p.language}</span></div>
     <div class="row">${repoBadge(p)}</div>
     <div class="dots">${dots}</div>
+    <div class="acts">
+      <button class="act" data-open="folder" data-id="${p.id}" title="在檔案總管開啟">📂 資料夾</button>
+      <button class="act" data-open="editor" data-id="${p.id}" title="用 VSCode 開啟">💻 VSCode</button>
+    </div>
     <div class="c-foot">
       <select class="cat-sel" data-id="${p.id}" title="${p.categorySource==='manual'?'手動分類':'自動猜測'}">${opts}</select>
       <span class="meta">${relTime(p.lastModified)} · ${p.score}/7 ${repoLink(p)}</span>
     </div>
   </div>`;
+}
+
+async function openProject(id, action, btn) {
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '開啟中…'; }
+  let ok = false;
+  try {
+    const res = await fetch('/api/projects/' + encodeURIComponent(id) + '/open', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action }),
+    });
+    ok = res.ok;
+  } catch { ok = false; }
+  if (btn) { btn.textContent = ok ? '✓ 已開啟' : '✕ 失敗'; setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1500); }
 }
 
 function render() {
@@ -397,6 +421,9 @@ function render() {
   });
   wall.querySelectorAll('.gen-btn').forEach((b) => {
     b.onclick = async () => { if (await genOne(b.dataset.gen, b)) render(); };
+  });
+  wall.querySelectorAll('.act').forEach((b) => {
+    b.onclick = () => openProject(b.dataset.id, b.dataset.open, b);
   });
 }
 

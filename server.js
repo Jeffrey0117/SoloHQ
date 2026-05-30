@@ -8,6 +8,7 @@ const db = require('../../sdk/database')
 const { matchRoute, routes } = require('./router')
 const { generateTasks, todayStr } = require('./engine')
 const projects = require('./projects')
+const { spawn } = require('child_process')
 
 const PORT = parseInt(process.env.PORT || '4028', 10)
 const TOKEN = process.env.SOLOHQ_TOKEN || ''
@@ -137,6 +138,26 @@ handlers['api:projects:intro'] = async (req, res, params) => {
     json(res, 200, { project: card })
   } catch (err) {
     json(res, 500, { error: err instanceof Error ? err.message : 'intro generation failed' })
+  }
+}
+
+// Open a project on this machine (server runs locally) — folder or VSCode.
+handlers['api:projects:open'] = async (req, res, params) => {
+  const body = await readBody(req).catch(() => ({}))
+  const action = body && body.action
+  const dir = projects.getPath(params.id)
+  if (!dir) return json(res, 404, { error: 'project not found' })
+  try {
+    if (action === 'folder') {
+      spawn('explorer.exe', [dir], { detached: true, stdio: 'ignore' }).unref()
+    } else if (action === 'editor') {
+      spawn('code', [dir], { detached: true, stdio: 'ignore', shell: true }).unref()
+    } else {
+      return json(res, 400, { error: 'unknown action' })
+    }
+    json(res, 200, { ok: true })
+  } catch (err) {
+    json(res, 500, { error: err instanceof Error ? err.message : 'open failed' })
   }
 }
 
