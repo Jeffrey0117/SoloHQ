@@ -48,15 +48,16 @@ function publicUrl(p, domain) {
 
 async function build() {
   const cfg = readConfig()
-  if (!cfg || !cfg.serviceToken) return new Map()
+  if (!cfg || !cfg.serviceToken) throw new Error(`no serviceToken in ${CONFIG_PATH}`)
   // Must be "localhost": CloudPipe routes by Host and treats 127.0.0.1 as an unknown site (404).
   const res = await fetch(`http://localhost:${cfg.port || 8787}/api/_admin/deploy/projects`, {
     headers: { authorization: `Bearer ${cfg.serviceToken}` },
     signal: AbortSignal.timeout(8000),
   })
-  if (!res.ok) return new Map()
+  if (!res.ok) throw new Error(`registry HTTP ${res.status}`)
   const body = await res.json()
   const list = Array.isArray(body) ? body : (body.projects || [])
+  if (!list.length) throw new Error('registry returned no projects')
   const root = path.dirname(CONFIG_PATH)
   const entries = await Promise.all(list.map(async (p) => {
     const dir = realKey(path.resolve(root, p.directory || `../workhub/${p.id}`))
@@ -84,6 +85,7 @@ async function getLive(opts) {
     inflight = build()
       .then((map) => { cache = { at: Date.now(), map }; return map })
       .catch((err) => {
+        // Keep the last good map and do NOT bump `at` — the next request retries.
         console.error('[solohq] live status failed:', err.message)
         return cache.map
       })
