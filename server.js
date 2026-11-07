@@ -4,14 +4,29 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+
+// Load .env before anything reads process.env (projects.js reads SOLOHQ_CODE_DIR
+// at require time). CloudPipe's restart can't inject env for projects that were
+// never deployed through it, so the app must load its own.
+;(function loadEnv() {
+  let text = ''
+  try { text = fs.readFileSync(path.join(__dirname, '.env'), 'utf-8') } catch { return }
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/)
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2')
+  }
+})()
+
 const db = require('../../sdk/database')
 const { matchRoute, routes } = require('./router')
 const { generateTasks, todayStr } = require('./engine')
 const projects = require('./projects')
+const live = require('./live')
 const { spawn } = require('child_process')
 
 const PORT = parseInt(process.env.PORT || '4028', 10)
 const TOKEN = process.env.SOLOHQ_TOKEN || ''
+const SHOWCASE_TITLE = process.env.SOLOHQ_SHOWCASE_TITLE || '我做的東西'
 
 // ── Init DB ──────────────────────────────────────────────
 
@@ -63,9 +78,13 @@ function readBody(req, limit) {
 
 function checkAuth(req) {
   if (!TOKEN) return true
-  const auth = req.headers.authorization || ''
-  return auth === `Bearer ${TOKEN}`
+  const given = Buffer.from(String(req.headers.authorization || ''))
+  const expected = Buffer.from(`Bearer ${TOKEN}`)
+  return given.length === expected.length && crypto.timingSafeEqual(given, expected)
 }
+
+// Routes reachable without the token: health + the public showcase feed.
+const PUBLIC_API = new Set(['api:health', 'api:showcase'])
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -105,28 +124,57 @@ handlers['page:matrix'] = (req, res) => servePage(res, 'matrix.html')
 handlers['page:revenue'] = (req, res) => servePage(res, 'revenue.html')
 handlers['page:brands'] = (req, res) => servePage(res, 'brands.html')
 handlers['page:projects'] = (req, res) => servePage(res, 'projects.html')
+handlers['page:showcase'] = (req, res) => servePage(res, 'showcase.html')
 
 // Health
 handlers['api:health'] = (req, res) => json(res, 200, { ok: true })
 
 // ── Projects wall ────────────────────────────────────────
 
-handlers['api:projects:list'] = (req, res) => {
+handlers['api:projects:list'] = async (req, res) => {
   const url = new URL(req.url, 'http://x')
   const cards = url.searchParams.get('scan') === '1'
     ? projects.scan({ force: false })   // incremental: only changed projects rebuild
     : projects.getCards()               // instant: straight from cache
-  json(res, 200, { projects: cards, codeDir: projects.CODE_DIR })
+  const liveMap = await live.getLive()
+  json(res, 200, { projects: live.attach(cards, liveMap), codeDir: projects.CODE_DIR })
 }
 
-handlers['api:projects:scan'] = (req, res) => {
+handlers['api:projects:scan'] = async (req, res) => {
   const cards = projects.scan({ force: true })
-  json(res, 200, { projects: cards, codeDir: projects.CODE_DIR })
+  const liveMap = await live.getLive({ fresh: true })
+  json(res, 200, { projects: live.attach(cards, liveMap), codeDir: projects.CODE_DIR })
+}
+
+// Public, unauthenticated: only projects explicitly marked public, and only
+// presentation fields — never paths, ports, repo URLs or commit messages.
+handlers['api:showcase'] = async (req, res) => {
+  const liveMap = await live.getLive()
+  const items = live.attach(projects.getCards(), liveMap)
+    .filter((p) => p.public && !p.hidden)
+    .map((p) => ({
+      name: p.displayName || p.name,
+      pitch: p.pitch || p.summary || '',
+      category: p.category,
+      stack: p.stack || [],
+      url: p.publicUrl || (p.live && p.live.url) || null,
+      up: p.live ? p.live.up : null,
+      lastUpdate: p.lastCommitAt || p.lastModified || null,
+      weeks: p.weeks || [],
+    }))
+    .sort((a, b) => String(b.lastUpdate || '').localeCompare(String(a.lastUpdate || '')))
+  res.setHeader('cache-control', 'public, max-age=60')
+  json(res, 200, { title: SHOWCASE_TITLE, projects: items })
 }
 
 handlers['api:projects:update'] = async (req, res, params) => {
   const body = await readBody(req)
-  const card = projects.setOverride(params.id, body || {})
+  let card
+  try {
+    card = projects.setOverride(params.id, body || {})
+  } catch (err) {
+    return json(res, 400, { error: err.message })
+  }
   if (!card) return json(res, 404, { error: 'project not found' })
   json(res, 200, { project: card })
 }
@@ -662,8 +710,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 404, { error: 'not found' })
     }
 
-    // Auth check for API routes (except health and pages)
-    if (matched.handler.startsWith('api:') && matched.handler !== 'api:health') {
+    // Auth check for API routes (pages, health and the public showcase are open)
+    if (matched.handler.startsWith('api:') && !PUBLIC_API.has(matched.handler)) {
       if (!checkAuth(req)) {
         return json(res, 401, { error: 'unauthorized' })
       }

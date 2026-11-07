@@ -11,3 +11,7 @@ projects-overrides.json
 
 # AI intro cache
 projects-summaries.json
+
+# secrets
+.env
+.env.*

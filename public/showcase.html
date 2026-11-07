@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projects</title>
+<meta name="description" content="一個人做的產品與工具,持續更新中。">
+<meta property="og:title" content="Projects">
+<meta property="og:description" content="一個人做的產品與工具,持續更新中。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f7f4; --surface:#ffffff; --border:#e6e6df; --border-2:#d8d8cf;
+  --text:#1a1c20; --text-dim:#5f6670; --text-faint:#9a9fa8;
+  --accent:#1f9d4d; --accent-soft:rgba(31,157,77,.10); --bar-empty:#e6e6df;
+  --font:'Noto Sans TC',-apple-system,BlinkMacSystemFont,sans-serif; --mono:'JetBrains Mono','SF Mono',monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#0b0d11; --surface:#13161d; --border:#232934; --border-2:#2e3644;
+    --text:#e2e5ec; --text-dim:#8b94a3; --text-faint:#5b6474;
+    --accent:#45d468; --accent-soft:rgba(69,212,104,.12); --bar-empty:#232934;
+  }
+}
+:root[data-theme="dark"] {
+  --bg:#0b0d11; --surface:#13161d; --border:#232934; --border-2:#2e3644;
+  --text:#e2e5ec; --text-dim:#8b94a3; --text-faint:#5b6474;
+  --accent:#45d468; --accent-soft:rgba(69,212,104,.12); --bar-empty:#232934;
+}
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing:antialiased; line-height:1.6; }
+a { color:inherit; }
+.wrap { max-width:1080px; margin:0 auto; padding:64px 24px 80px; }
+
+header { margin-bottom:44px; }
+h1 { font-size:clamp(28px, 5vw, 40px); font-weight:900; letter-spacing:-1px; line-height:1.15; }
+.lede { color:var(--text-dim); font-size:15px; margin-top:10px; }
+.lede b { color:var(--text); font-family:var(--mono); font-weight:600; }
+
+.section { display:flex; align-items:baseline; gap:10px; margin:40px 0 16px; }
+.section h2 { font-size:13px; font-weight:700; letter-spacing:1.5px; color:var(--text-dim); }
+.section span { font-family:var(--mono); font-size:12px; color:var(--text-faint); }
+
+.grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap:16px; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 20px 16px;
+  display:flex; flex-direction:column; gap:12px; transition:border-color .15s, transform .15s; }
+.card:hover { border-color:var(--border-2); transform:translateY(-2px); }
+.name { font-size:18px; font-weight:800; letter-spacing:-.3px; display:flex; align-items:center; gap:8px; }
+.pitch { font-size:14px; color:var(--text-dim); flex:1; }
+.tags { display:flex; flex-wrap:wrap; gap:6px; }
+.tag { font-family:var(--mono); font-size:11px; color:var(--text-dim); border:1px solid var(--border); border-radius:6px; padding:1px 7px; }
+.foot { display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--border); padding-top:12px; flex-wrap:wrap; }
+.meta { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--text-faint); }
+.spark { display:flex; align-items:flex-end; gap:2px; height:18px; }
+.spark i { display:block; width:5px; border-radius:1.5px; background:var(--accent); min-height:2px; }
+.spark i.z { background:var(--bar-empty); }
+.open { font-size:13px; font-weight:700; color:var(--accent); text-decoration:none; padding:5px 11px; border-radius:8px; background:var(--accent-soft); white-space:nowrap; }
+.open:hover { filter:brightness(1.08); }
+.paused { font-size:12px; color:var(--text-faint); }
+
+.empty, .loading { text-align:center; color:var(--text-faint); padding:80px 0; font-size:14px; }
+footer { margin-top:64px; font-size:12px; color:var(--text-faint); text-align:center; }
+
+@media (max-width: 600px) {
+  .wrap { padding:40px 16px 60px; }
+  header { margin-bottom:28px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">Projects</h1>
+    <p class="lede" id="lede">載入中…</p>
+  </header>
+  <main id="list"><div class="loading">載入中…</div></main>
+  <footer id="footer"></footer>
+</div>
+<script>
+const CATS = [
+  { id:'product', label:'產品' },
+  { id:'platform', label:'平台' },
+  { id:'content-gen', label:'創作工具' },
+  { id:'blog', label:'內容' },
+  { id:'infra', label:'開發者工具' },
+  { id:'other', label:'其他' },
+];
+const KNOWN = new Set(CATS.map((c) => c.id));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+function rel(iso) {
+  if (!iso) return '';
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (d <= 0) return '今天更新'; if (d === 1) return '昨天更新';
+  if (d < 30) return d + ' 天前更新';
+  if (d < 365) return Math.floor(d / 30) + ' 個月前更新';
+  return Math.floor(d / 365) + ' 年前更新';
+}
+function spark(weeks) {
+  if (!weeks || !weeks.length || !weeks.some(Boolean)) return '';
+  const max = Math.max(1, ...weeks);
+  return `<span class="spark" title="最近 12 週的更新頻率">${weeks.map((n) =>
+    n ? `<i style="height:${Math.max(3, Math.round(n / max * 18))}px"></i>` : '<i class="z"></i>').join('')}</span>`;
+}
+function card(p) {
+  const link = p.url
+    ? (p.up === false ? '<span class="paused">維護中</span>' : `<a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">開啟 ↗</a>`)
+    : '';
+  return `<article class="card">
+    <div class="name">${esc(p.name)}</div>
+    <p class="pitch">${esc(p.pitch)}</p>
+    ${p.stack && p.stack.length ? `<div class="tags">${p.stack.map((s) => `<span class="tag">${esc(s)}</span>`).join('')}</div>` : ''}
+    <div class="foot"><span class="meta">${spark(p.weeks)}<span>${rel(p.lastUpdate)}</span></span>${link}</div>
+  </article>`;
+}
+fetch('/api/showcase').then((r) => r.json()).then((data) => {
+  const items = data.projects || [];
+  const title = data.title || 'Projects';
+  document.title = title;
+  document.getElementById('title').textContent = title;
+  const active = items.filter((p) => (p.weeks || []).some(Boolean)).length;
+  document.getElementById('lede').innerHTML = items.length
+    ? `<b>${items.length}</b> 個專案${active ? `,其中 <b>${active}</b> 個最近三個月還在更新` : ''}。`
+    : '整理中,很快就會放上來。';
+  const list = document.getElementById('list');
+  if (!items.length) { list.innerHTML = ''; return; }
+  let html = '';
+  for (const c of CATS) {
+    const group = items.filter((p) => (KNOWN.has(p.category) ? p.category : 'other') === c.id);
+    if (!group.length) continue;
+    html += `<div class="section"><h2>${c.label}</h2><span>${group.length}</span></div><div class="grid">${group.map(card).join('')}</div>`;
+  }
+  list.innerHTML = html;
+  document.getElementById('footer').textContent = '資料直接取自程式碼庫,每次更新會自動反映在這裡。';
+}).catch(() => {
+  document.getElementById('list').innerHTML = '<div class="empty">暫時讀不到資料,稍後再試。</div>';
+  document.getElementById('lede').textContent = '';
+});
+</script>
+</body>
+</html>

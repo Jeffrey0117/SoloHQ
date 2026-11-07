@@ -85,6 +85,10 @@ const routes = [
   { method: 'PUT', path: '/api/projects/:id', handler: 'api:projects:update' },
   { method: 'POST', path: '/api/projects/:id/intro', handler: 'api:projects:intro' },
   { method: 'POST', path: '/api/projects/:id/open', handler: 'api:projects:open' },
+
+  // Public showcase (no auth) — only projects marked public
+  { method: 'GET', path: '/showcase', handler: 'page:showcase' },
+  { method: 'GET', path: '/api/showcase', handler: 'api:showcase' },
 ]
 
 module.exports = { matchRoute, routes }

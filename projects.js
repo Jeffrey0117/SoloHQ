@@ -9,15 +9,23 @@
 
 const fs = require('fs')
 const path = require('path')
+const { execFileSync } = require('child_process')
 
-// Directory that holds all projects. Defaults to the parent `code/` folder
-// (solohq lives at code/workhub/solohq → ../../ === code/). Override with env.
+// Folders that hold projects, `;`-separated. Earlier roots win when two
+// different folders share a name — list the deployed (canonical) roots first
+// so a stale copy elsewhere never shadows the real project.
 const CODE_DIR = process.env.SOLOHQ_CODE_DIR || path.resolve(__dirname, '../../')
+const CODE_DIRS = CODE_DIR.split(';').map((s) => s.trim()).filter(Boolean)
 const CACHE_FILE = path.join(__dirname, 'projects-cache.json')
 const OVERRIDES_FILE = path.join(__dirname, 'projects-overrides.json')
 const SUMMARIES_FILE = path.join(__dirname, 'projects-summaries.json')
 
+const CARD_SCHEMA = 2
 const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', '.cache', 'coverage'])
+// Deploy leftovers and archived husks — never real projects.
+const IGNORE_NAME = /(\.(bak|old|shadow|slot[ab])$)|husk-bak|\.bak[-_]/i
+const ACTIVITY_WEEKS = 12
+const WEEK_MS = 7 * 86400000
 // A directory counts as a "project" if it has at least one of these markers.
 const PROJECT_MARKERS = ['package.json', '.git', 'index.html', 'requirements.txt', 'pyproject.toml', 'Cargo.toml', 'go.mod']
 
@@ -197,11 +205,55 @@ function guessCategory(card) {
   return 'other'
 }
 
+// ── git activity (what changed lately) ───────────────────
+
+function git(dir, args) {
+  try {
+    return execFileSync('git', ['-C', dir, ...args], {
+      encoding: 'utf-8', windowsHide: true, timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'],
+    })
+  } catch {
+    return ''
+  }
+}
+
+/** Recent commits + raw commit times for the activity window (bucketed at read time). */
+function getActivity(dir) {
+  if (!exists(path.join(dir, '.git'))) return null
+  const recent = git(dir, ['log', '-5', '--format=%cI%x09%s'])
+    .split('\n').filter(Boolean)
+    .map((line) => {
+      const [at, ...rest] = line.split('\t')
+      return { at, subject: rest.join('\t').slice(0, 140) }
+    })
+  const times = git(dir, ['log', `--since=${ACTIVITY_WEEKS * 7}.days`, '--format=%ct'])
+    .split('\n').filter(Boolean).map(Number).filter(Number.isFinite)
+  return { recent, times, lastCommitAt: recent[0] ? recent[0].at : null }
+}
+
+/** Derived, time-relative stats — computed on read so they never go stale in cache. */
+function activityStats(card) {
+  const a = card.activity
+  if (!a) return { weeks: [], commits30: 0, lastCommitAt: null, recent: [] }
+  const now = Date.now()
+  const start = now - ACTIVITY_WEEKS * WEEK_MS
+  const weeks = new Array(ACTIVITY_WEEKS).fill(0)
+  let commits30 = 0
+  for (const t of a.times || []) {
+    const ms = t * 1000
+    const idx = Math.floor((ms - start) / WEEK_MS)
+    if (idx >= 0 && idx < ACTIVITY_WEEKS) weeks[idx] += 1
+    if (ms > now - 30 * 86400000) commits30 += 1
+  }
+  return { weeks, commits30, lastCommitAt: a.lastCommitAt, recent: a.recent || [] }
+}
+
 // ── fingerprint + lastModified (cheap, top-level only) ───
 
 function cheapFingerprint(dir) {
   let newest = 0
-  for (const rel of ['', '.git/HEAD', 'package.json', 'README.md']) {
+  // .git/logs/HEAD moves on every commit / pull / reset — HEAD itself rarely does.
+  for (const rel of ['', '.git/HEAD', '.git/logs/HEAD', 'package.json', 'README.md']) {
     const st = statSafe(path.join(dir, rel))
     if (st && st.mtimeMs > newest) newest = st.mtimeMs
   }
@@ -233,9 +285,11 @@ function buildCard(dir) {
   const repo = getRepo(dir)
 
   const card = {
+    schema: CARD_SCHEMA,
     id: name,
     name,
     path: dir,
+    activity: getActivity(dir),
     summary: getSummary(dir, pkg),
     type: detectType(dir, pkg),
     stack: detectStack(dir, pkg),
@@ -283,6 +337,10 @@ function applyOverride(card, override) {
   }
   if (typeof override.hidden === 'boolean') merged.hidden = override.hidden
   if (typeof override.note === 'string') merged.note = override.note
+  if (typeof override.public === 'boolean') merged.public = override.public
+  if (typeof override.pitch === 'string') merged.pitch = override.pitch
+  if (typeof override.publicUrl === 'string') merged.publicUrl = override.publicUrl
+  if (typeof override.displayName === 'string') merged.displayName = override.displayName
   return merged
 }
 
@@ -306,7 +364,13 @@ function applyAnalysis(card, ai) {
 }
 
 function decorate(card, override, ai) {
-  return applyAnalysis(applyOverride(card, override), ai)
+  const merged = applyAnalysis(applyOverride(card, override), ai)
+  const { activity, ...rest } = merged
+  return { ...rest, ...activityStats(merged) }
+}
+
+function byRecency(a, b) {
+  return String(b.lastCommitAt || b.lastModified || '').localeCompare(String(a.lastCommitAt || a.lastModified || ''))
 }
 
 // ── public API ───────────────────────────────────────────
@@ -323,30 +387,31 @@ function scan(opts) {
   const nextCache = {}
   const cards = []
 
-  let dirs = []
-  try { dirs = fs.readdirSync(CODE_DIR, { withFileTypes: true }) } catch { dirs = [] }
+  for (const root of CODE_DIRS) {
+    let dirs = []
+    try { dirs = fs.readdirSync(root, { withFileTypes: true }) } catch { dirs = [] }
 
-  for (const dirent of dirs) {
-    if (!dirent.isDirectory()) continue
-    if (dirent.name.startsWith('.') || IGNORE_DIRS.has(dirent.name)) continue
-    const full = path.join(CODE_DIR, dirent.name)
-    if (!isProject(full)) continue
+    for (const dirent of dirs) {
+      // Junctions/symlinks (code/x → workhub/x) report isDirectory() false on some setups.
+      if (!dirent.isDirectory() && !dirent.isSymbolicLink()) continue
+      const name = dirent.name
+      if (name.startsWith('.') || IGNORE_DIRS.has(name) || IGNORE_NAME.test(name)) continue
+      if (nextCache[name]) continue          // an earlier (canonical) root already has it
+      const full = path.join(root, name)
+      if (!isProject(full)) continue
 
-    const fp = cheapFingerprint(full)
-    const cached = cache[dirent.name]
-    let card
-    if (!force && cached && cached.fingerprint === fp && cached.repo) {
-      card = cached            // unchanged → reuse (the fast path); cached.repo guards old-schema cards
-    } else {
-      card = buildCard(full)
+      const fp = cheapFingerprint(full)
+      const cached = cache[name]
+      const reusable = !force && cached && cached.schema === CARD_SCHEMA &&
+        cached.fingerprint === fp && cached.path === full
+      const card = reusable ? cached : buildCard(full)
+      nextCache[name] = card
+      cards.push(decorate(card, overrides[name], summaries[name]))
     }
-    nextCache[dirent.name] = card
-    cards.push(decorate(card, overrides[dirent.name], summaries[dirent.name]))
   }
 
   saveCache(nextCache)
-  cards.sort((a, b) => String(b.lastModified || '').localeCompare(String(a.lastModified || '')))
-  return cards
+  return cards.sort(byRecency)
 }
 
 /** Read cards from cache without rescanning; scans on first run. */
@@ -355,9 +420,11 @@ function getCards() {
   if (!cache || Object.keys(cache).length === 0) return scan({ force: false })
   const overrides = loadOverrides()
   const summaries = loadSummaries()
+  const stale = Object.values(cache).some((c) => c.schema !== CARD_SCHEMA)
+  if (stale) return scan({ force: false })
   return Object.values(cache)
     .map((card) => decorate(card, overrides[card.id], summaries[card.id]))
-    .sort((a, b) => String(b.lastModified || '').localeCompare(String(a.lastModified || '')))
+    .sort(byRecency)
 }
 
 /** Generate (and cache) an AI intro for one project via the local claude CLI. */
@@ -374,19 +441,47 @@ async function generateIntroFor(id) {
   return decorate(card, overrides[id], summaries[id])
 }
 
-/** Persist a manual override (category / hidden / note) for one project. */
+const MAX_TEXT = 200
+
+function cleanText(v) {
+  return String(v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, MAX_TEXT)
+}
+
+/** Only http(s) URLs may be shown publicly — anything else is dropped. */
+function cleanUrl(v) {
+  const s = String(v).trim()
+  if (s === '') return ''
+  try {
+    const u = new URL(s)
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Persist a manual override for one project:
+ * category / hidden / note / public / pitch / publicUrl / displayName.
+ */
 function setOverride(id, patch) {
-  const overrides = loadOverrides()
-  const current = overrides[id] || {}
-  const next = { ...current }
-  if (typeof patch.category === 'string') next.category = patch.category
-  if (typeof patch.hidden === 'boolean') next.hidden = patch.hidden
-  if (typeof patch.note === 'string') next.note = patch.note
-  overrides[id] = next
-  saveOverrides(overrides)
   const cache = loadCache()
-  const card = cache[id] ? applyOverride(cache[id], next) : null
-  return card
+  if (!cache[id]) return null
+  const overrides = loadOverrides()
+  const next = { ...(overrides[id] || {}) }
+  if (typeof patch.category === 'string') next.category = cleanText(patch.category)
+  if (typeof patch.hidden === 'boolean') next.hidden = patch.hidden
+  if (typeof patch.note === 'string') next.note = cleanText(patch.note)
+  if (typeof patch.public === 'boolean') next.public = patch.public
+  if (typeof patch.pitch === 'string') next.pitch = cleanText(patch.pitch)
+  if (typeof patch.displayName === 'string') next.displayName = cleanText(patch.displayName)
+  if (typeof patch.publicUrl === 'string') {
+    const url = cleanUrl(patch.publicUrl)
+    if (url === null) throw new Error('publicUrl must be an http(s) URL')
+    next.publicUrl = url
+  }
+  saveOverrides({ ...overrides, [id]: next })
+  const summaries = loadSummaries()
+  return decorate(cache[id], next, summaries[id])
 }
 
 /** Look up a project's absolute path by id (from cache) — for open-in-editor/folder. */
