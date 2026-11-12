@@ -1,0 +1,618 @@
+{
+  "repo": 1,
+  "name": "solohq",
+  "what": "Solo founder command center — commit graph + daily tasks + content matrix + revenue tracking",
+  "kind": "service",
+  "work": {
+    "guide": "CLAUDE.md",
+    "run": "npm start",
+    "deploy": "git push"
+  },
+  "offers": [
+    {
+      "id": "get_dashboard",
+      "what": "Get the aggregated dashboard payload in one call: all brands, today's generated tasks, the 365-day activity graph, and summary stats. Use when you need a full overview of the founder's state.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/dashboard",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "list_brands",
+      "what": "List all brands (products/businesses) sorted by sort_order, including revenue totals, user counts, status, and priority. Use to enumerate the founder's brands.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/brands",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "create_brand",
+      "what": "Create a new brand. Use when adding a new product/business to track.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/brands",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Optional brand id; auto-generated if omitted"
+            },
+            "name": {
+              "type": "string",
+              "description": "Brand name (required)"
+            },
+            "revenue_total": {
+              "type": "integer",
+              "description": "Starting total revenue"
+            },
+            "user_count": {
+              "type": "integer",
+              "description": "Current user count"
+            },
+            "status": {
+              "type": "string",
+              "description": "Brand status, e.g. 'active' (default)"
+            },
+            "priority": {
+              "type": "integer",
+              "description": "Priority weight (default 1)"
+            },
+            "task_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Task types to generate, e.g. ['reel','article','reply','update']"
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "Display sort order"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    },
+    {
+      "id": "update_brand",
+      "what": "Update fields of an existing brand by id. Use to change name, status, priority, revenue, etc.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/brands/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Brand id (path param)"
+            },
+            "name": {
+              "type": "string",
+              "description": "New name"
+            },
+            "status": {
+              "type": "string",
+              "description": "New status"
+            },
+            "priority": {
+              "type": "integer",
+              "description": "New priority"
+            },
+            "revenue_total": {
+              "type": "integer",
+              "description": "New revenue total"
+            },
+            "user_count": {
+              "type": "integer",
+              "description": "New user count"
+            },
+            "task_types": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "New task types"
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "New sort order"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "delete_brand",
+      "what": "Delete a brand by id. Use to remove a brand from tracking.",
+      "how": "http",
+      "http": {
+        "method": "DELETE",
+        "path": "/api/brands/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Brand id (path param)"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_topics",
+      "what": "List a brand's content topics, each with its auto-created content cells (article, yt, reels, threads). Use to view the content matrix for one brand.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/topics/{brandId}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "brandId": {
+              "type": "string",
+              "description": "Brand id whose topics to list (path param)"
+            }
+          },
+          "required": [
+            "brandId"
+          ]
+        }
+      }
+    },
+    {
+      "id": "create_topic",
+      "what": "Create a content topic for a brand; automatically generates content cells (article, yt, reel1-3, thread1-2). Use to add a new content idea/topic.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/topics",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "brand_id": {
+              "type": "string",
+              "description": "Owning brand id (required)"
+            },
+            "title": {
+              "type": "string",
+              "description": "Topic title (required)"
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "Display sort order"
+            }
+          },
+          "required": [
+            "brand_id",
+            "title"
+          ]
+        }
+      }
+    },
+    {
+      "id": "update_topic",
+      "what": "Update a topic by id (e.g. rename or reorder). Use to edit an existing topic.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/topics/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Topic id (path param)"
+            },
+            "title": {
+              "type": "string",
+              "description": "New title"
+            },
+            "sort_order": {
+              "type": "integer",
+              "description": "New sort order"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "delete_topic",
+      "what": "Delete a topic and all of its content cells. Use to remove a content topic.",
+      "how": "http",
+      "http": {
+        "method": "DELETE",
+        "path": "/api/topics/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Topic id (path param)"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "update_cell",
+      "what": "Update a content cell's status; if no status given it toggles between done and empty (sets/clears done_at). Use to mark a piece of content done or not done.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/cells/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Content cell id (path param)"
+            },
+            "status": {
+              "type": "string",
+              "description": "Explicit status, e.g. 'done' or 'empty'; omit to toggle"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_today_tasks",
+      "what": "Generate and return today's recommended tasks across all brands based on priority and last-action timing. Use to fetch the daily to-do list.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/tasks/today",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "complete_task",
+      "what": "Mark a daily task done or skipped by id; updates the brand's last_action_at and the daily activity log. Use when a founder finishes or skips a task.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/tasks/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Task id (path param)"
+            },
+            "status": {
+              "type": "string",
+              "description": "'done' (default) or 'skipped'"
+            },
+            "skipped_reason": {
+              "type": "string",
+              "description": "Reason if skipped"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_revenue",
+      "what": "List revenue log entries sorted by newest date, optionally filtered by brand_id. Use to review income history.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/revenue",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "brand_id": {
+              "type": "string",
+              "description": "Optional brand id query filter"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "create_revenue",
+      "what": "Record a revenue entry for a brand and recompute that brand's revenue total. Use to log income.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/revenue",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "brand_id": {
+              "type": "string",
+              "description": "Brand the revenue belongs to (required)"
+            },
+            "amount": {
+              "type": "integer",
+              "description": "Revenue amount, non-negative (required)"
+            },
+            "source": {
+              "type": "string",
+              "description": "Revenue source label"
+            },
+            "note": {
+              "type": "string",
+              "description": "Optional note"
+            },
+            "date": {
+              "type": "string",
+              "description": "Date YYYY-MM-DD; defaults to today"
+            }
+          },
+          "required": [
+            "brand_id",
+            "amount"
+          ]
+        }
+      }
+    },
+    {
+      "id": "delete_revenue",
+      "what": "Delete a revenue entry by id and recompute the brand's revenue total. Use to remove an income record.",
+      "how": "http",
+      "http": {
+        "method": "DELETE",
+        "path": "/api/revenue/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Revenue entry id (path param)"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "get_activity_graph",
+      "what": "Get a 365-day contribution-style activity graph (per-day task-completion count and intensity level 0-3). Use to render or analyze the year's activity heatmap.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/graph",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "get_stats",
+      "what": "Get summary stats: active days, active rate, current/longest streak, total revenue, tasks done, completion rate, and revenue goal. Use for high-level progress metrics.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/stats",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "list_goals",
+      "what": "List all goals (e.g. total revenue target). Use to read the founder's goals.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/goals",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "upsert_goal",
+      "what": "Update a goal by id, creating it if it does not exist (upsert). Use to set or change a goal's target.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/goals/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Goal id (path param)"
+            },
+            "type": {
+              "type": "string",
+              "description": "Goal type, e.g. 'total'"
+            },
+            "target": {
+              "type": "integer",
+              "description": "Goal target value"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "list_projects",
+      "what": "List project-wall cards from cache; pass scan=1 to incrementally rebuild only changed projects. Returns cards plus the code directory. Use to view the founder's local projects.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/projects",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "scan": {
+              "type": "string",
+              "description": "Set '1' to do an incremental rescan instead of reading cache"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "scan_projects",
+      "what": "Force a full rescan of all projects and return refreshed cards. Use to rebuild the entire project wall from disk.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/projects/scan",
+        "auth": "bearer"
+      }
+    },
+    {
+      "id": "update_project",
+      "what": "Set override metadata for a project card by id (e.g. custom title/description). Use to customize how a project appears.",
+      "how": "http",
+      "http": {
+        "method": "PUT",
+        "path": "/api/projects/{id}",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Project id (path param)"
+            },
+            "category": {
+              "type": "string",
+              "description": "Override the card's category"
+            },
+            "hidden": {
+              "type": "boolean",
+              "description": "true to hide the card from the wall (and from the showcase)"
+            },
+            "note": {
+              "type": "string",
+              "description": "Private note shown on the card"
+            },
+            "public": {
+              "type": "boolean",
+              "description": "true to list the project on the public, unauthenticated showcase; false to take it off"
+            },
+            "pitch": {
+              "type": "string",
+              "description": "One-line pitch shown on the public showcase"
+            },
+            "displayName": {
+              "type": "string",
+              "description": "Display name used instead of the folder name"
+            },
+            "publicUrl": {
+              "type": "string",
+              "description": "Public http(s) URL linked from the showcase (rejected if not http/https)"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "generate_project_intro",
+      "what": "Generate (via AI summarizer) an intro/description for a project by id and return the updated card. Use to auto-write a project blurb.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/projects/{id}/intro",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Project id (path param)"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      }
+    },
+    {
+      "id": "open_project",
+      "what": "Open a project on the host machine in either its folder (explorer) or editor (VSCode). Only works when the server runs locally. Use to launch a project locally.",
+      "how": "http",
+      "http": {
+        "method": "POST",
+        "path": "/api/projects/{id}/open",
+        "auth": "bearer",
+        "params": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Project id (path param)"
+            },
+            "action": {
+              "type": "string",
+              "description": "'folder' to open in file explorer or 'editor' to open in VSCode"
+            }
+          },
+          "required": [
+            "id",
+            "action"
+          ]
+        }
+      }
+    },
+    {
+      "id": "health",
+      "what": "Health check returning { ok: true }. Use to verify the service is up; requires no auth.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/health"
+      }
+    },
+    {
+      "id": "get_showcase",
+      "what": "Get the public showcase feed: only projects marked public, with presentation fields (name, pitch, category, stack, url, up, lastUpdate, weekly activity), newest first. Use to see what is publicly listed or to build a portfolio page; requires no auth.",
+      "how": "http",
+      "http": {
+        "method": "GET",
+        "path": "/api/showcase"
+      }
+    }
+  ]
+}
